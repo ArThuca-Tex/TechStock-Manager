@@ -1,0 +1,39 @@
+﻿{% extends 'base.html' %}
+{% block title %}Entrar | TechStock{% endblock %}
+{% block content %}
+<div class="login-layout">
+  <section class="login-intro" aria-labelledby="intro-title">
+    <span class="eyebrow">INVENTÁRIO + VENDAS</span>
+    <h1 id="intro-title">Sua operação,<br>sob controle.</h1>
+    <p>Do catálogo ao checkout, tudo o que sua equipe precisa para vender com organização.</p>
+    <div class="login-feature"><span aria-hidden="true">01</span><div><strong>Estoque conectado</strong><p>Produtos e licenças no mesmo lugar.</p></div></div>
+    <div class="login-feature"><span aria-hidden="true">02</span><div><strong>Vendas com rastreabilidade</strong><p>Pedidos, movimentações e recibos integrados.</p></div></div>
+    <div class="login-feature"><span aria-hidden="true">03</span><div><strong>Acesso por perfil</strong><p>Cada pessoa com as permissões da sua função.</p></div></div>
+    <span class="login-signature">TECHSTORE INFORMÁTICA & SERVIÇOS CORPORATIVOS</span>
+  </section>
+  <section class="form-card login-card" aria-labelledby="login-title">
+    <span class="login-symbol" aria-hidden="true">TS</span>
+    <span class="eyebrow">ACESSO À OPERAÇÃO</span>
+    <h2 id="login-title">Bem-vindo de volta</h2>
+    <p>Entre com sua conta para acessar o TechStock.</p>
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <label for="email">E-mail corporativo</label>
+      <input id="email" type="email" name="email" required autocomplete="username" maxlength="254" placeholder="voce@techstore.com" value="{{ request.form.get('email', '') }}">
+      <label for="senha">Senha</label>
+      <div class="password-field"><input id="senha" type="password" name="senha" required autocomplete="current-password" placeholder="Digite sua senha"><button type="button" id="mostrar-senha" aria-controls="senha" aria-pressed="false">Mostrar</button></div>
+      <button class="button primary full-button login-submit">Entrar no painel <span aria-hidden="true">→</span></button>
+    </form>
+    <p class="login-help">Precisa de acesso? Procure o gerente responsável.</p>
+  </section>
+</div>
+<script>
+document.getElementById('mostrar-senha').addEventListener('click', function () {
+  const input = document.getElementById('senha');
+  const visible = input.type === 'password';
+  input.type = visible ? 'text' : 'password';
+  this.textContent = visible ? 'Ocultar' : 'Mostrar';
+  this.setAttribute('aria-pressed', String(visible));
+});
+</script>
+{% endblock %}

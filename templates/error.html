@@ -1,0 +1,3 @@
+{% extends "base.html" %}
+{% block title %}Erro | TechStock{% endblock %}
+{% block content %}<div class="form-card"><h1>Não foi possível acessar os dados</h1><p>Verifique se o SQL Server está ligado, se o banco db_techstock existe e se a conexão está configurada corretamente.</p><a class="button primary" href="{{ url_for('dashboard') }}">Tentar novamente</a></div>{% endblock %}

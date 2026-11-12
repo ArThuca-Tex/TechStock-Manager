@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Novo produto | TechStock{% endblock %}
+{% block content %}
+<div class="page-heading"><div><span class="eyebrow">CATÁLOGO</span><h1>Novo produto</h1><p>Cadastre um ativo físico ou uma licença digital.</p></div><a class="button secondary" href="{{ url_for('dashboard') }}">Voltar</a></div>
+<form method="post" class="form-card"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div class="form-grid">
+    <label>SKU *<input name="sku" maxlength="20" required placeholder="Ex.: SSD001"></label>
+    <label>Nome comercial *<input name="nome" maxlength="20" required></label>
+    <label>Fabricante *<input name="fabricante" maxlength="20" required></label>
+    <label>Classificação *<select name="classificacao" id="classificacao" required><option value="">Selecione</option><option>Hardware</option><option>Software</option><option>Periférico</option></select></label>
+    <label class="full">Especificação técnica / versão<input name="especificacao" maxlength="20" placeholder="Ex.: DDR4 3200MHz, versão 2026..."></label>
+    <label>Modalidade de licenciamento<input name="modalidade_licenciamento" id="licenca" maxlength="20" placeholder="Assinatura anual, OEM, perpétua..."></label>
+    <label>Preço unitário (R$) *<input name="preco_venda" type="number" min="0.01" step="0.01" required></label>
+    <label>Estoque atual *<input name="estoque_atual" type="number" min="0" step="1" value="0" required></label>
+    <label>Estoque mínimo *<input name="estoque_minimo" type="number" min="0" step="1" value="0" required></label>
+    <label>Localização física / digital *<input name="localizacao" maxlength="20" required placeholder="Prateleira A1 ou Cofre Digital"></label>
+    <label>Categoria *<select name="id_categoria" required><option value="">Selecione uma categoria</option>{% for c in categorias %}<option value="{{ c.id_categoria }}">{{ c.nome }}</option>{% endfor %}</select></label>
+    <label>Fornecedor *<select name="id_fornecedor" required><option value="">Selecione um fornecedor</option>{% for f in fornecedores %}<option value="{{ f.id_fornecedor }}">{{ f.razao_social }}</option>{% endfor %}</select></label>
+  </div>
+  <div class="form-actions"><a class="button secondary" href="{{ url_for('dashboard') }}">Cancelar</a><button class="button primary" type="submit">Salvar produto</button></div>
+</form>
+<script>
+const tipo = document.getElementById('classificacao');
+const licenca = document.getElementById('licenca');
+tipo.addEventListener('change', () => {
+  licenca.required = tipo.value === 'Software';
+  licenca.placeholder = tipo.value === 'Software' ? 'Obrigatório para software' : 'Não aplicável a hardware';
+});
+</script>
+{% endblock %}

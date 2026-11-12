@@ -1,0 +1,432 @@
+{
+  "authors": [
+    "Arthur",
+    "Dimitri Santos",
+    "Enzo Frugeri",
+    "Maria Julia",
+    "Matheus Ribeiro",
+    "Vitor Ribeiro"
+  ],
+  "pages": [
+    {
+      "title": "1. Apresentação e objetivos",
+      "blocks": [
+        {
+          "type": "p",
+          "text": "Este relatório apresenta a evolução do TechStock Manager, desenvolvido para a demanda #2026-INV05 da TechStore Informática & Serviços Corporativos. O projeto amplia o inventário da etapa anterior com autenticação, controle de acesso por perfil, frente de caixa, processamento transacional de vendas e emissão de recibos."
+        },
+        {
+          "type": "p",
+          "text": "O cenário proposto envolve a venda conjunta de componentes físicos e licenças digitais. A solução reúne esses itens em um único pedido, calcula os valores e mantém o vínculo entre a transação comercial, a baixa de estoque e o operador responsável."
+        },
+        {
+          "type": "bullets",
+          "items": [
+            "Evitar vendas parciais: pedido, itens, estoque e auditoria devem ser confirmados ou revertidos em conjunto.",
+            "Separar as permissões de Operador e Gerente, protegendo alterações de catálogo e cancelamentos.",
+            "Preservar os dados históricos da venda e oferecer um comprovante organizado para consulta e impressão."
+          ]
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Tecnologia",
+            "Aplicação no projeto"
+          ],
+          "rows": [
+            [
+              "Python e Flask",
+              "Rotas, sessões, validações e regras de negócio."
+            ],
+            [
+              "Jinja, HTML e CSS",
+              "Telas, mensagens e versão de impressão."
+            ],
+            [
+              "JavaScript",
+              "Busca, carrinho e cálculo dinâmico dos subtotais."
+            ],
+            [
+              "SQLite",
+              "Banco local utilizado e validado nesta entrega."
+            ],
+            [
+              "SQL Server / pyodbc",
+              "Backend opcional e scripts de estrutura e migração."
+            ],
+            [
+              "unittest",
+              "Testes isolados e integração com banco temporário."
+            ]
+          ]
+        },
+        {
+          "type": "p",
+          "text": "A execução local utiliza SQLite para dispensar a instalação de SQL Express e driver ODBC. Os arquivos para SQL Server foram mantidos, mas esse backend não foi validado contra um servidor real neste ambiente. As capturas deste relatório usam dados fictícios em um banco isolado, sem alterar os registros do usuário."
+        }
+      ]
+    },
+    {
+      "title": "2. Arquitetura e modelagem relacional",
+      "blocks": [
+        {
+          "type": "p",
+          "text": "A aplicação segue uma organização simples: o navegador apresenta as telas; as rotas Flask aplicam as permissões e regras; db.py seleciona a conexão; e o banco mantém o catálogo, as vendas e o histórico. A camada SQLite adapta os recursos de SQL Server usados nas consultas, incluindo o retorno do identificador da venda e a abertura da transação."
+        },
+        {
+          "type": "image",
+          "file": "modelo-relacional.png",
+          "caption": "Figura 1 — Modelo relacional simplificado, elaborado a partir dos esquemas e das consultas do projeto."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Entidade adicionada",
+            "Informações principais"
+          ],
+          "rows": [
+            [
+              "Usuarios",
+              "Nome, e-mail único, hash da senha, perfil e status."
+            ],
+            [
+              "Vendas",
+              "Pedido único, cliente, pagamento, total, status e operador."
+            ],
+            [
+              "Itens_Venda",
+              "Venda, produto, quantidade, preço praticado e subtotal."
+            ]
+          ]
+        },
+        {
+          "type": "p",
+          "text": "As tabelas Categorias, Fornecedores, Produtos e Movimentacoes foram preservadas. As movimentações receberam vínculos opcionais de usuário e venda, permitindo identificar a origem das saídas de checkout e das entradas de estorno. Chaves estrangeiras e restrições CHECK protegem os vínculos e os valores positivos."
+        },
+        {
+          "type": "p",
+          "text": "Nome, classificação e preço do produto são copiados para o item no momento da venda. Assim, alterações posteriores no catálogo não reescrevem o conteúdo do recibo histórico. Os scripts de criação, migração e demonstração acompanham o código-fonte."
+        }
+      ]
+    },
+    {
+      "title": "3. Autenticação e controle de acesso",
+      "blocks": [
+        {
+          "type": "p",
+          "text": "O acesso é realizado por e-mail e senha, com verificação de hash pelo Werkzeug. A sessão é persistente por até oito horas e os formulários POST exigem token CSRF. O perfil e o status do usuário são consultados no servidor a cada requisição, de modo que a proteção não depende apenas dos botões exibidos na interface."
+        },
+        {
+          "type": "image",
+          "file": "01-login.png",
+          "caption": "Figura 2 — Tela de autenticação com identificação visual do TechStock e opção de mostrar ou ocultar a senha."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Perfil",
+            "Permissões implementadas"
+          ],
+          "rows": [
+            [
+              "Operador",
+              "Consultar catálogo, montar carrinho, registrar vendas e consultar/imprimir seus recibos."
+            ],
+            [
+              "Gerente",
+              "Operações do operador, cadastros, alteração de preços, movimentações manuais, todos os pedidos, indicadores financeiros e cancelamento."
+            ]
+          ]
+        },
+        {
+          "type": "p",
+          "text": "Foram disponibilizadas as contas operador@techstore.com e gerente@techstore.com para a demonstração. Usuários inativos são impedidos de operar e o logout encerra a sessão. As senhas iniciais e as instruções de acesso estão no README; devem ser alteradas antes de uma disponibilização fora do contexto de demonstração."
+        }
+      ]
+    },
+    {
+      "title": "4. Catálogo e acompanhamento do estoque",
+      "blocks": [
+        {
+          "type": "p",
+          "text": "O catálogo consolida produtos, categorias e fornecedores, exibindo SKU, fabricante, classificação, preço, saldo, estoque mínimo e localização ou modalidade de licenciamento. Os indicadores resumem a quantidade de produtos ativos, as unidades disponíveis e os itens que precisam de reposição."
+        },
+        {
+          "type": "image",
+          "file": "02-catalogo.png",
+          "caption": "Figura 3 — Inventário no perfil Gerente, com indicadores de estoque e controles de preço."
+        },
+        {
+          "type": "p",
+          "text": "A busca filtra os registros apresentados por nome, SKU ou outros textos visíveis. Itens com saldo no mínimo ou abaixo dele recebem destaque. O gerente pode ajustar preços; essa mudança vale para compras futuras, preservando os valores praticados nos pedidos já registrados."
+        },
+        {
+          "type": "p",
+          "text": "A navegação utiliza a mesma identidade visual em todas as telas: tons de verde, superfícies claras, cartões, mensagens de retorno e indicação da página ativa. Os componentes possuem adaptações para telas menores; a avaliação visual final em celular permanece uma conferência manual recomendada."
+        }
+      ]
+    },
+    {
+      "title": "5. Cadastros e validação de produtos",
+      "blocks": [
+        {
+          "type": "p",
+          "text": "O formulário de produto reúne identificação, classificação, especificação, preço, estoque inicial e mínimo, localização, categoria e fornecedor. A modalidade de licenciamento é exigida para software. O servidor verifica os campos numéricos e aplica os limites dos textos antes da gravação."
+        },
+        {
+          "type": "image",
+          "file": "11-novo-produto.png",
+          "caption": "Figura 4 — Cadastro de produto com seleção de categoria e fornecedor."
+        },
+        {
+          "type": "p",
+          "text": "A área Cadastros permite criar categorias e consultar categorias e fornecedores, com tratamento de vínculos nas exclusões. Referências usadas por produtos são protegidas por integridade referencial. Não há uma tela pública de criação de usuários; as contas de demonstração são preparadas por script."
+        },
+        {
+          "type": "p",
+          "text": "Na entrega, schema_sqlite.sql oferece o esquema local completo. Para SQL Server, schema_v1.sql prepara a estrutura legada e migration_v2.sql acrescenta o módulo comercial. As cargas de demonstração são idempotentes: repetir a preparação não duplica os pedidos fictícios identificados pelo sistema."
+        }
+      ]
+    },
+    {
+      "title": "6. Frente de caixa e carrinho multi-itens",
+      "blocks": [
+        {
+          "type": "p",
+          "text": "A frente de caixa permite buscar e selecionar produtos, informar quantidades, adicionar diferentes itens, alterar quantidades e remover linhas antes da confirmação. O cliente é identificado por nome ou razão social e CPF/CNPJ. As opções de pagamento são PIX, cartão de crédito e boleto faturado."
+        },
+        {
+          "type": "image",
+          "file": "03-caixa.png",
+          "caption": "Figura 5 — Carrinho com duas memórias RAM e duas licenças, totalizando R$ 1.299,60."
+        },
+        {
+          "type": "p",
+          "text": "No exemplo, as memórias totalizam R$ 499,80 e as licenças R$ 799,80. O navegador calcula a apresentação em centavos inteiros. Na confirmação, o servidor desconsidera qualquer preço enviado pelo cliente e recalcula os valores com Decimal a partir do catálogo do banco."
+        },
+        {
+          "type": "p",
+          "text": "O carrinho é mantido temporariamente no sessionStorage da aba para facilitar correções após erros. Quando o recibo concluído é aberto, esse carrinho é limpo. Essa persistência temporária não substitui a conferência de preços e estoque no momento da venda."
+        }
+      ]
+    },
+    {
+      "title": "7. Checkout transacional e tratamento de falhas",
+      "blocks": [
+        {
+          "type": "p",
+          "text": "A confirmação abre uma transação explícita. No SQLite é utilizado BEGIN IMMEDIATE, que reserva a escrita antes da leitura dos saldos; no SQL Server, o código utiliza BEGIN TRANSACTION e bloqueios de atualização. Os produtos são processados na ordem dos identificadores para manter uma ordem consistente de acesso."
+        },
+        {
+          "type": "bullets",
+          "items": [
+            "Conferir existência, situação ativa, preço e saldo de cada produto.",
+            "Criar o cabeçalho em Vendas e inserir as linhas em Itens_Venda.",
+            "Debitar o estoque e registrar as saídas em Movimentacoes com usuário e venda.",
+            "Confirmar o conjunto com COMMIT; em caso de erro, executar rollback da conexão."
+          ]
+        },
+        {
+          "type": "image",
+          "file": "08-saldo-insuficiente.png",
+          "caption": "Figura 6 — Mensagem de estoque insuficiente após tentativa de compra acima do saldo disponível."
+        },
+        {
+          "type": "p",
+          "text": "A interface informa a impossibilidade da operação sem registrar uma venda parcial. Os testes comparam o conteúdo de Produtos, Vendas, Itens_Venda e Movimentacoes antes e depois da falha. Também foi induzido um erro tardio no banco, após o início da gravação, para verificar a reversão do cabeçalho, dos itens, da baixa e da auditoria."
+        }
+      ]
+    },
+    {
+      "title": "8. Histórico, indicadores e cancelamento",
+      "blocks": [
+        {
+          "type": "p",
+          "text": "O histórico apresenta número e data do pedido, cliente, operador, valor e situação. O operador visualiza seus próprios pedidos; o gerente acessa o conjunto das vendas e os indicadores de receita concluída, quantidade de pedidos e cancelamentos. Cada registro disponibiliza o acesso ao recibo."
+        },
+        {
+          "type": "image",
+          "file": "09-cancelamento.png",
+          "caption": "Figura 7 — Histórico após cancelamento de uma venda no banco isolado de demonstração."
+        },
+        {
+          "type": "p",
+          "text": "O cancelamento é restrito ao gerente e ocorre em uma transação. O pedido permanece armazenado com status CANCELADA; todas as quantidades são devolvidas ao estoque; as entradas de estorno recebem o usuário responsável e o vínculo com a venda. O registro também informa quem cancelou e quando."
+        },
+        {
+          "type": "p",
+          "text": "O backend impede cancelamento repetido. Nos testes, duas solicitações de cancelamento do mesmo pedido produziram uma única restituição de estoque. Os indicadores financeiros consideram apenas vendas concluídas no cálculo da receita exibida."
+        }
+      ]
+    },
+    {
+      "title": "9. Recibo e impressão",
+      "blocks": [
+        {
+          "type": "p",
+          "text": "Após uma venda bem-sucedida, o sistema redireciona para o recibo. O documento identifica a TechStore, o cliente, o operador, o pedido, a data, a forma de pagamento e os itens, com quantidades, preços e total. Badges distinguem componentes físicos de licenças digitais."
+        },
+        {
+          "type": "image",
+          "file": "05-recibo.png",
+          "caption": "Figura 8 — Recibo de uma venda concluída, com acesso ao botão Imprimir recibo."
+        },
+        {
+          "type": "image",
+          "file": "06-impressao.png",
+          "caption": "Figura 9 — O mesmo recibo com o CSS de impressão aplicado, sem menu nem botões."
+        },
+        {
+          "type": "p",
+          "text": "O botão abre o diálogo de impressão do navegador, que permite imprimir ou salvar em PDF. A prévia em uma página também foi demonstrada pelo usuário. O arquivo Recibo_Demonstracao.pdf acompanha este relatório. A chave apresentada corresponde ao identificador único do pedido para conferência interna; não é uma assinatura criptográfica e o recibo não substitui documento fiscal."
+        }
+      ]
+    },
+    {
+      "title": "10. Movimentações e rastreabilidade",
+      "blocks": [
+        {
+          "type": "p",
+          "text": "A tela de movimentações é restrita ao gerente e permite registrar entradas e saídas manuais. Uma entrada soma ao saldo; uma saída subtrai apenas quando existe quantidade suficiente. O ajuste e seu histórico são gravados na mesma transação, com identificação do usuário responsável."
+        },
+        {
+          "type": "image",
+          "file": "07-movimentacoes.png",
+          "caption": "Figura 10 — Formulário e histórico de movimentações, incluindo a carga inicial e as saídas das vendas fictícias."
+        },
+        {
+          "type": "p",
+          "text": "O histórico apresenta data, produto, tipo, quantidade e observação. Os vínculos de usuário e venda são mantidos no banco, inclusive para os movimentos automáticos de checkout e estorno."
+        },
+        {
+          "type": "p",
+          "text": "Foi corrigida uma incompatibilidade na apresentação de datas: o SQLite retorna texto e o SQL Server retorna datetime. Um filtro compartilhado aceita os dois formatos e exibe dia/mês/ano e horário. Essa correção passou a ser coberta por testes de abertura das telas e de registro de entradas e saídas."
+        }
+      ]
+    },
+    {
+      "title": "11. Validação e evidências dos testes",
+      "blocks": [
+        {
+          "type": "p",
+          "text": "A execução registrada para esta entrega aprovou 17 testes: seis com conexão simulada e onze com SQLite real em arquivos temporários. A base do usuário não é alterada por esses testes. O log completo está em testes-execucao.txt."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Grupo de verificação",
+            "Evidência obtida"
+          ],
+          "rows": [
+            [
+              "Acesso e segurança",
+              "Login com hash real, navegação, acesso anônimo, CSRF e restrições do operador."
+            ],
+            [
+              "Telas e datas",
+              "Abertura das telas do gerente e recibos; formatação de texto, datetime e ausência de data."
+            ],
+            [
+              "Venda multi-itens",
+              "Pedido e duas linhas de itens, baixa de saldo, auditoria e recibo acessível."
+            ],
+            [
+              "Estoque insuficiente",
+              "Operação bloqueada, sem mudanças nas quatro tabelas envolvidas."
+            ],
+            [
+              "Falha tardia no banco",
+              "Trigger de teste provoca erro de gravação; todo o conjunto é revertido."
+            ],
+            [
+              "Concorrência",
+              "Duas conexões tentam comprar a última unidade; apenas uma conclui."
+            ],
+            [
+              "Cancelamento",
+              "Restauração integral do saldo, entradas de estorno e prevenção de duplicidade."
+            ],
+            [
+              "Integridade e carga",
+              "FKs, quantidade positiva e execução repetida da carga sem duplicação."
+            ],
+            [
+              "Movimentação manual",
+              "Entrada, saída, identificação do gerente e bloqueio de saída sem saldo."
+            ]
+          ]
+        },
+        {
+          "type": "code",
+          "text": ".\\.venv\\Scripts\\python.exe -m unittest discover -s tests -v\n\nRan 17 tests\nOK"
+        },
+        {
+          "type": "p",
+          "text": "A execução contém mensagens de erro esperadas dos cenários de falha simulada e trigger proposital; esses registros não indicam reprovação. O resultado final do unittest foi OK. As capturas do sistema foram produzidas no Chrome em ambiente separado e o recibo de demonstração foi exportado em PDF."
+        },
+        {
+          "type": "p",
+          "text": "Limites da validação: SQL Server não foi testado em um servidor real nesta máquina; a revisão visual em celular e em impressora física não foi automatizada. A prévia de impressão e o fluxo geral foram conferidos pelo usuário."
+        }
+      ]
+    },
+    {
+      "title": "12. Atendimento aos requisitos e entrega",
+      "blocks": [
+        {
+          "type": "table",
+          "headers": [
+            "Requisito",
+            "Implementação e evidência"
+          ],
+          "rows": [
+            [
+              "REQ-01 · 2,0 pontos",
+              "Entidades, PK/FK e CHECKs; esquema e migração, Figura 1 e testes de integridade."
+            ],
+            [
+              "REQ-02 · 2,0 pontos",
+              "Hash, sessão e RBAC; Figura 2 e testes de segurança e permissões."
+            ],
+            [
+              "REQ-03 · 2,0 pontos",
+              "Carrinho multi-itens e totais dinâmicos; Figura 5 e teste de venda."
+            ],
+            [
+              "REQ-04 · 2,5 pontos",
+              "Transação, saldo, auditoria e rollback; Figura 6 e testes de falha tardia e concorrência no SQLite."
+            ],
+            [
+              "REQ-05 · 1,5 ponto",
+              "Recibo, impressão, mensagens e README; Figuras 8 e 9, PDF de exemplo e documentação."
+            ]
+          ]
+        },
+        {
+          "type": "p",
+          "text": "A matriz relaciona a implementação aos critérios fornecidos na atividade; não representa atribuição de nota. A execução validada utiliza SQLite. Caso haja orientação adicional exigindo especificamente SQL Server, deve-se selecionar esse backend e realizar a validação correspondente antes da entrega."
+        },
+        {
+          "type": "p",
+          "text": "Para reproduzir a demonstração, instalar as dependências, executar o preparador e iniciar a aplicação:"
+        },
+        {
+          "type": "code",
+          "text": "python -m venv .venv\n.\\.venv\\Scripts\\python.exe -m pip install -r requirements.txt\n.\\.venv\\Scripts\\python.exe preparar_banco.py --demo\n.\\.venv\\Scripts\\python.exe app.py"
+        },
+        {
+          "type": "p",
+          "text": "Acesso local: http://127.0.0.1:5000. O README descreve as contas, variáveis de ambiente e a alternativa SQL Server. O .gitignore exclui ambientes virtuais, segredos e bancos locais; o avaliador pode reconstruir os dados fictícios com o preparador."
+        },
+        {
+          "type": "p",
+          "text": "A entrega deve incluir o código-fonte, os arquivos SQL, os testes, o README e este relatório. A publicação no GitHub e o envio do link ao Google Classroom são etapas de submissão ainda dependentes da equipe. Não foi informado um endereço de repositório para inserir neste documento."
+        },
+        {
+          "type": "p",
+          "text": "O resultado consolida inventário e vendas com controle de acesso, consistência transacional e comprovante. Como evolução futura, podem ser acrescentados filtros por período aos indicadores, manutenção de usuários pela interface e um mecanismo público de verificação de recibos. Essas melhorias não fazem parte do escopo implementado aqui."
+        }
+      ]
+    }
+  ]
+}

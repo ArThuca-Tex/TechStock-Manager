@@ -1,0 +1,46 @@
+test_anonymous_requires_login (test_checkout.CheckoutTest.test_anonymous_requires_login) ... ok
+test_database_failure_after_header_rolls_back (test_checkout.CheckoutTest.test_database_failure_after_header_rolls_back) ... [2026-11-11 21:41:07,358] ERROR in app: Checkout revertido
+Traceback (most recent call last):
+  File "C:\Users\Samsung-Notebook\OneDrive\Documentos\TechStock-Manager\app.py", line 441, in pdv
+    cur.execute('INSERT INTO Itens_Venda (venda_id, produto_id, quantidade_vendida, preco_unitario_praticado, subtotal_item, produto_nome, classificacao) SELECT ?, id_produto, ?, ?, ?, nome, classificacao FROM Produtos WHERE id_produto = ?', venda_id, qtd, preco, subtotal, pid)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Samsung-Notebook\OneDrive\Documentos\TechStock-Manager\tests\test_checkout.py", line 26, in execute
+    raise pyodbc.Error('Falha simulada na grava��o')
+pyodbc.Error: Falha simulada na grava��o
+ok
+test_insufficient_stock_rolls_back (test_checkout.CheckoutTest.test_insufficient_stock_rolls_back) ... ok
+test_missing_csrf_is_rejected (test_checkout.CheckoutTest.test_missing_csrf_is_rejected) ... ok
+test_multi_item_sale_commits_with_database_prices (test_checkout.CheckoutTest.test_multi_item_sale_commits_with_database_prices) ... ok
+test_operator_cannot_mutate_catalog_or_cancel (test_checkout.CheckoutTest.test_operator_cannot_mutate_catalog_or_cancel) ... ok
+test_all_manager_pages_and_receipts_render (test_sqlite_integration.SQLiteIntegrationTest.test_all_manager_pages_and_receipts_render) ... ok
+test_cancellation_restores_stock_exactly_once (test_sqlite_integration.SQLiteIntegrationTest.test_cancellation_restores_stock_exactly_once) ... ok
+test_datetime_filter_accepts_both_database_types (test_sqlite_integration.SQLiteIntegrationTest.test_datetime_filter_accepts_both_database_types) ... ok
+test_demo_seed_is_idempotent (test_sqlite_integration.SQLiteIntegrationTest.test_demo_seed_is_idempotent) ... ok
+test_foreign_keys_and_positive_quantities (test_sqlite_integration.SQLiteIntegrationTest.test_foreign_keys_and_positive_quantities) ... ok
+test_insufficient_stock_leaves_all_tables_unchanged (test_sqlite_integration.SQLiteIntegrationTest.test_insufficient_stock_leaves_all_tables_unchanged) ... ok
+test_late_database_failure_reverts_header_items_stock_and_audit (test_sqlite_integration.SQLiteIntegrationTest.test_late_database_failure_reverts_header_items_stock_and_audit) ... [2026-11-11 21:41:12,291] ERROR in app: Checkout revertido
+Traceback (most recent call last):
+  File "C:\Users\Samsung-Notebook\OneDrive\Documentos\TechStock-Manager\db.py", line 74, in execute
+    self.cursor.execute(sql, tuple(str(value) if isinstance(value, Decimal) else value for value in parameters))
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.IntegrityError: Falha proposital
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Samsung-Notebook\OneDrive\Documentos\TechStock-Manager\app.py", line 441, in pdv
+    cur.execute('INSERT INTO Itens_Venda (venda_id, produto_id, quantidade_vendida, preco_unitario_praticado, subtotal_item, produto_nome, classificacao) SELECT ?, id_produto, ?, ?, ?, nome, classificacao FROM Produtos WHERE id_produto = ?', venda_id, qtd, preco, subtotal, pid)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Samsung-Notebook\OneDrive\Documentos\TechStock-Manager\db.py", line 76, in execute
+    raise pyodbc.IntegrityError(str(exc)) from exc
+pyodbc.IntegrityError: Falha proposital
+ok
+test_login_real_hash_and_pages (test_sqlite_integration.SQLiteIntegrationTest.test_login_real_hash_and_pages) ... ok
+test_manual_entry_exit_and_insufficient_stock (test_sqlite_integration.SQLiteIntegrationTest.test_manual_entry_exit_and_insufficient_stock) ... ok
+test_multi_item_checkout_receipt_and_stock (test_sqlite_integration.SQLiteIntegrationTest.test_multi_item_checkout_receipt_and_stock) ... ok
+test_two_checkouts_cannot_sell_last_unit_twice (test_sqlite_integration.SQLiteIntegrationTest.test_two_checkouts_cannot_sell_last_unit_twice) ... ok
+
+----------------------------------------------------------------------
+Ran 17 tests in 8.440s
+
+OK

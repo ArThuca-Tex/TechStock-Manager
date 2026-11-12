@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Dashboard | TechStock{% endblock %}
+{% block content %}
+<div class="page-heading"><div><span class="eyebrow">VISÃO GERAL</span><h1>Dashboard</h1><p>Acompanhe os ativos e a situação do inventário.</p></div>{% if usuario.perfil_acesso == 'GERENTE' %}<a class="button primary" href="{{ url_for('novo_produto') }}">＋ Cadastrar produto</a>{% endif %}</div>
+<div class="stats">
+  <div class="stat-card"><span>Produtos ativos</span><strong>{{ total }}</strong><small>Itens no catálogo</small></div>
+  <div class="stat-card"><span>Unidades em estoque</span><strong>{{ total_units }}</strong><small>Saldo total registrado</small></div>
+  <div class="stat-card warning-stat"><span>Precisam de reposição</span><strong>{{ low_stock }}</strong><small>Estoque no mínimo ou abaixo</small></div>
+</div>
+<div class="section-heading"><div><h2>Inventário de produtos</h2><p>Dados consolidados de produtos, categorias e fornecedores.</p></div><span class="count">{{ products|length }} registros</span></div>
+<div class="catalog-tools"><label><span class="sr-only">Buscar no invent?rio</span><input id="catalog-search" type="search" placeholder="Buscar por produto, SKU ou categoria?" aria-label="Buscar no invent?rio"></label><span id="catalog-count" aria-live="polite">{{ products|length }} produtos no cat?logo</span></div>
+<div class="table-wrap"><table id="catalog-table"><thead><tr><th>SKU / ATIVO</th><th>FABRICANTE</th><th>CATEGORIA</th><th>FORNECEDOR</th><th>PREÇO</th><th>ESTOQUE</th><th>LOCALIZAÇÃO / LICENÇA</th><th>STATUS</th><th></th></tr></thead><tbody>
+{% for p in products %}
+<tr class="{% if p.estoque_atual <= p.estoque_minimo %}low-row{% endif %}">
+<td><strong>{{ p.sku }}</strong><small>{{ p.nome }}</small></td><td>{{ p.fabricante }}</td><td>{{ p.categoria }}</td><td>{{ p.fornecedor }}</td><td>R$ {{ "%.2f"|format(p.preco_venda) }}{% if usuario.perfil_acesso == 'GERENTE' %}<form method="post" action="{{ url_for('alterar_preco', produto_id=p.id_produto) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="number" name="preco_venda" min="0.01" max="99999999.99" step="0.01" value="{{ p.preco_venda }}" aria-label="Novo preço de {{ p.nome }}" required><button class="text-button">Atualizar preço</button></form>{% endif %}</td>
+<td><strong>{{ p.estoque_atual }}</strong><small>Mínimo: {{ p.estoque_minimo }}</small></td>
+<td>{{ p.localizacao }}{% if p.modalidade_licenciamento %}<small>{{ p.modalidade_licenciamento }}</small>{% endif %}</td>
+<td>{% if p.estoque_atual <= p.estoque_minimo %}<span class="status danger">Reposição necessária</span>{% else %}<span class="status good">Regular</span>{% endif %}</td>
+<td>{% if usuario.perfil_acesso == 'GERENTE' %}<form method="post" action="{{ url_for('desativar_produto', produto_id=p.id_produto) }}" onsubmit="return confirm('Desativar este produto? O histórico será preservado.');"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="text-button" type="submit">Desativar</button></form>{% endif %}</td>
+</tr>
+{% else %}<tr><td colspan="9" class="empty">Nenhum produto ativo cadastrado.</td></tr>{% endfor %}
+</tbody></table></div>
+<script src="{{ url_for('static', filename='js/catalogo.js', v=asset_version) }}" defer></script>
+{% endblock %}

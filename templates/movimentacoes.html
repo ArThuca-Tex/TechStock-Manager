@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Movimentações | TechStock{% endblock %}
+{% block content %}
+<div class="page-heading"><div><span class="eyebrow">OPERAÇÃO DE ESTOQUE</span><h1>Movimentações</h1><p>Registre entradas de suprimentos e saídas por venda ou uso.</p></div></div>
+<div class="two-col">
+<form method="post" class="form-card"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+<h2>Nova movimentação</h2>
+<label>Produto *<select name="id_produto" required><option value="">Selecione um produto</option>{% for p in produtos %}<option value="{{ p.id_produto }}">{{ p.sku }} — {{ p.nome }} (saldo: {{ p.estoque_atual }})</option>{% endfor %}</select></label>
+<label>Tipo de operação *<select name="tipo" required><option value="Entrada">Entrada</option><option value="Saida">Saída</option></select></label>
+<label>Quantidade *<input type="number" name="quantidade" min="1" step="1" required></label>
+<label>Observação<input name="observacao" maxlength="255" placeholder="Ex.: compra, venda, aplicação em bancada..."></label>
+<button class="button primary full-button" type="submit">Registrar movimentação</button>
+<p class="hint">Saídas acima do saldo disponível são bloqueadas automaticamente.</p>
+</form>
+<div class="info-card"><div class="info-icon">⇄</div><h2>Como funciona</h2><p><strong>Entrada:</strong> soma a quantidade informada ao saldo atual.</p><p><strong>Saída:</strong> subtrai a quantidade, desde que exista saldo suficiente.</p><p>Cada operação atualiza o estoque e registra o histórico na mesma transação do banco de dados.</p></div>
+</div>
+<div class="section-heading"><div><h2>Histórico de movimentações</h2><p>Registros mais recentes primeiro.</p></div></div>
+<div class="table-wrap"><table><thead><tr><th>DATA</th><th>SKU / PRODUTO</th><th>TIPO</th><th>QUANTIDADE</th><th>OBSERVAÇÃO</th></tr></thead><tbody>
+{% for m in historico %}<tr><td>{{ m.data_movimentacao|data_hora }}</td><td><strong>{{ m.sku }}</strong><small>{{ m.nome }}</small></td><td><span class="status {{ 'good' if m.tipo == 'Entrada' else 'neutral' }}">{{ m.tipo }}</span></td><td>{{ m.quantidade }}</td><td>{{ m.observacao or '—' }}</td></tr>
+{% else %}<tr><td colspan="5" class="empty">Nenhuma movimentação registrada.</td></tr>{% endfor %}
+</tbody></table></div>
+{% endblock %}
