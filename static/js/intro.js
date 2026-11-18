@@ -16,132 +16,143 @@ function setupLanding() {
   const select = gsap.utils.selector(cinema);
   const [stage] = select('.cinema-stage');
   const [host] = select('.cinema-webgl');
-  const [chapter] = select('.cinema-chapter');
   const [chip, fan, board] = ['.chip-css', '.fan-css', '.board-css'].map((selector) => select(selector)[0]);
   const labels = select('.fan-labels li').map((label) => ({ part: label.dataset.part, line: label.querySelector('i') }));
-  const cssCrystals = select('.cinema-crystal');
   const state = {
     chipSize: 1, chipTurn: 0, fanSize: 0, fanTurn: 0, rotor: 0, split: 0,
     boardSize: 0, boardTurn: 0, cameraMove: 0, phase: 0, ambient: 0,
+    water: 0, sink: 0, rise: 0, spread: 0, spin: 0,
   };
-  const compact = matchMedia('(max-width: 670px)');
+  const compact = matchMedia('(max-width: 760px)');
+  const started = performance.now();
+  let lastDraw = started;
   let model;
   let frame = 0;
   let disposed = false;
-  let active = true;
-  const chapterStarts = [0, .78, 1.76, 2.7, 3.81, 4.74];
-  let currentChapter = 0;
-  let timeline;
+  let visible = true;
   cinema.classList.add('is-animated');
-  const pointer = trackCrystals(stage, cssCrystals, drawSoon);
+  const pointer = trackCrystals(stage, select('.cinema-crystal'), drawSoon);
+  const visibility = new IntersectionObserver(([entry]) => {
+    visible = entry.isIntersecting;
+    if (visible) drawSoon();
+  });
+  visibility.observe(stage);
+  document.addEventListener('visibilitychange', drawSoon);
 
   function drawSoon() {
-    if (!disposed && !frame && active) frame = requestAnimationFrame(draw);
+    if (!disposed && !frame && visible && !document.hidden) frame = requestAnimationFrame(draw);
   }
 
-  function draw() {
+  function draw(now) {
     frame = 0;
-    const { chipSize, chipTurn, fanSize, fanTurn, split, rotor, boardSize, boardTurn, phase, ambient } = state;
-    const progress = timeline?.progress() ?? 0;
-    stage.style.setProperty('--progress', progress);
-    const nextChapter = chapterStarts.findLastIndex((start) => phase >= start);
-    if (nextChapter !== currentChapter) {
-      currentChapter = nextChapter;
-      chapter.textContent = `0${currentChapter + 1} / 06`;
+    const { chipSize, chipTurn, fanSize, fanTurn, split, rotor, boardSize, boardTurn, phase, water, sink, rise, spread } = state;
+    const elapsed = now - started;
+    const current = Math.sin(elapsed * .00165);
+    const spinning = phase > .14 && phase < .40 && split < .96;
+    if (spinning) state.spin += Math.min(now - lastDraw, 50) * .00068 * (1 - split) ** 2;
+    lastDraw = now;
+    state.ambient = current * .18;
+
+    stage.style.setProperty('--water', water);
+    stage.style.setProperty('--light-drift', `${current * water * 28}px`);
+    stage.style.setProperty('--rise', rise);
+    stage.style.setProperty('--spread', spread);
+    stage.style.setProperty('--current', current);
+    stage.style.setProperty('--jelly-opacity', Math.min(rise * 8, 1, (1 - rise) * 12));
+    stage.style.setProperty('--swarm-opacity', Math.min(rise * 3, .9));
+    const hasWebGL = cinema.classList.contains('has-webgl');
+    if (!hasWebGL) {
+      const falling = sink > .001 && sink < .998;
+      const submerged = Math.pow(Math.max(0, Math.sin(sink * Math.PI)), .78) * .66;
+      chip.style.opacity = falling ? submerged : Math.min(chipSize * 1.5, 1);
+      chip.style.translate = falling ? `${-16 + current * 2}vw ${-48 + sink * 104}vh` : '';
+      chip.style.setProperty('--chip-turn', `${-32 + chipTurn * 69 + state.ambient * 2}deg`);
+      chip.style.setProperty('--chip-zoom', falling ? .63 : Math.max(.3, chipSize));
+      fan.style.opacity = falling ? submerged : Math.min(fanSize * 1.6, 1);
+      fan.style.translate = falling ? `${18 + current * 3}vw ${-48 + sink * 124}vh` : '';
+      fan.style.scale = falling ? .5 : Math.max(.6, fanSize);
+      fan.style.setProperty('--explode', falling ? 0 : split);
+      fan.style.setProperty('--fan-depth', `${falling ? 0 : split * (compact.matches ? 24 : 43)}px`);
+      fan.style.setProperty('--rotor', `${rotor + state.spin}rad`);
+      board.style.opacity = Math.min(boardSize * 1.5, 1);
+      board.style.translate = `0 ${sink * 83}vh`;
+      board.style.setProperty('--board-pitch', `${45 - boardTurn * 34}deg`);
+      board.style.setProperty('--board-scale', Math.max(.2, boardSize));
     }
-    chip.style.opacity = Math.min(chipSize * 1.5, 1);
-    chip.style.setProperty('--chip-turn', `${-32 + chipTurn * 69 + ambient * 2}deg`);
-    chip.style.setProperty('--chip-zoom', Math.max(.3, chipSize));
-    fan.style.opacity = Math.min(fanSize * 1.6, 1);
-    fan.style.scale = Math.max(.6, fanSize);
-    fan.style.setProperty('--fan-depth', `${split * (compact.matches ? 23 : 50)}px`);
-    fan.style.setProperty('--fan-angle', `${-12 + fanTurn * 26}deg`);
-    fan.style.setProperty('--rotor', `${rotor + ambient * .3}rad`);
-    board.style.opacity = Math.min(boardSize * 1.5, 1);
-    board.style.setProperty('--board-pitch', `${45 - boardTurn * 34}deg`);
-    board.style.setProperty('--board-scale', Math.max(.2, boardSize));
-    const pointerMoving = pointer.update(phase, ambient, !cinema.classList.contains('has-webgl'));
+    const pointerMoving = pointer.update(phase * 5, state.ambient, !hasWebGL && water < .75);
     model?.setPointer(pointer.x, pointer.y);
-    const modelMoving = model?.render();
-    if (phase > 1.56 && phase < 2.56 && !compact.matches) {
+    const modelMoving = model?.render(elapsed);
+    if (phase > .30 && phase < .49 && !compact.matches) {
       const bounds = stage.getBoundingClientRect();
       labels.forEach(({ part, line }, index) => {
-        // offsetLeft is independent of the line's current rotation.
         const start = line.parentElement.getBoundingClientRect();
         const x = start.left + line.offsetLeft;
         const y = start.top + line.offsetTop;
-        const end = model?.anchor(part) ?? { x: bounds.width * (.66 + index * .045), y: bounds.height * (.45 + index * .084) };
+        const end = (hasWebGL && model?.anchor(part)) || { x: bounds.width * .56, y: bounds.height * (.37 + index * .14) };
         const dx = end.x + bounds.left - x;
         const dy = end.y + bounds.top - y;
         line.style.setProperty('--line-length', `${Math.hypot(dx, dy)}px`);
         line.style.setProperty('--line-angle', `${Math.atan2(dy, dx)}rad`);
       });
     }
-    if (pointerMoving || modelMoving) drawSoon();
+    if (pointerMoving || modelMoving || water > .04 || spinning || (phase < .03 && elapsed < 4500)) drawSoon();
   }
 
-  const selectScene = (scene) => select(`.scene-${scene}`);
-  const fadeIn = (scene, start, duration = .28) =>
-    timeline.to(selectScene(scene), { autoAlpha: 1, duration }, start);
-  const fadeOut = (scene, start, duration = .24) =>
-    timeline.to(selectScene(scene), { autoAlpha: 0, duration }, start);
-
-  timeline = gsap.timeline({
-    defaults: { ease: 'power2.inOut' },
+  const timeline = gsap.timeline({
+    defaults: { ease: 'sine.inOut' },
     onUpdate: drawSoon,
     scrollTrigger: {
-      trigger: stage, pin: true, start: 'top top', scrub: .4,
-      end: () => `+=${Math.round(stage.clientHeight * (compact.matches ? 2.9 : 3.45))}`,
-      onToggle(trigger) {
-        active = trigger.isActive || trigger.progress === 0;
-        if (active) drawSoon();
-      },
+      trigger: stage, pin: true, start: 'top top', scrub: .48,
+      end: () => `+=${Math.round(stage.clientHeight * (compact.matches ? 4.6 : 5.4))}`,
+      invalidateOnRefresh: true,
       onRefresh: drawSoon,
     },
   });
-  timeline
-    .to(state, { phase: 5, duration: 5, ease: 'none' }, 0)
-    .to(state, { chipSize: 1.17, chipTurn: .72, cameraMove: -.68, duration: .55 }, .08)
-    .to(select('.scene-chip h1 span:first-child'), { xPercent: -13, duration: .4 }, .28)
-    .to(select('.scene-chip h1 span:last-child'), { xPercent: 12, duration: .4 }, .28)
-    .to(state, { chipSize: 0, chipTurn: 1.38, fanSize: 1, cameraMove: .18, duration: .58 }, .54)
-    .to(state, { rotor: 1.65, fanTurn: .34, duration: .82 }, .65)
-    .to(state, { rotor: 8.7, fanTurn: .86, split: 1, cameraMove: -.24, duration: .94 }, 1.47)
-    .from(select('.fan-labels li'), {
-      x: -28, clipPath: 'inset(0 100% 0 0)', duration: .27, stagger: .1, immediateRender: false,
-    }, 1.79)
-    .to(state, { fanSize: 0, fanTurn: 1.16, boardSize: 1.08, boardTurn: .23, cameraMove: .42, duration: .62 }, 2.41)
-    .to(state, { boardTurn: .85, cameraMove: -.29, duration: 1.1 }, 2.94)
-    .fromTo(select('.scene-board h2 b'), { yPercent: 115 }, {
-      yPercent: 0, duration: .41, stagger: .17, immediateRender: false,
-    }, 2.76)
-    .to(state, { boardSize: .26, boardTurn: 1.18, cameraMove: 1.24, duration: .66 }, 3.47)
-    .to(state, { boardSize: 0, duration: .32 }, 4.13)
-    .from(select('.scene-system h2 span'), {
-      y: 24, opacity: 0, duration: .27, stagger: .11, immediateRender: false,
-    }, 3.86)
-    .from(select('.system-modules li'), {
-      y: 30, rotationX: -28, scale: .84, opacity: 0, duration: .31, stagger: .055, immediateRender: false,
-    }, 4.08)
-    .to(select('.cinema-art'), { opacity: .15, duration: .42 }, 4.58);
-  fadeOut('chip', .46, .35);
-  fadeIn('fan', .86);
-  fadeOut('fan', 1.55);
-  fadeIn('exploded', 1.75);
-  fadeOut('exploded', 2.43, .3);
-  fadeIn('board', 2.75);
-  fadeOut('board', 3.56, .3);
-  fadeIn('system', 3.85);
-  fadeOut('system', 4.72, .28);
+  const crossfade = (node, start, end, duration = .052) => timeline
+    .to(select(node), { autoAlpha: 1, duration }, start)
+    .to(select(node), { autoAlpha: 0, duration }, end);
 
-  gsap.to(state, { ambient: 1, duration: 2.2, yoyo: true, repeat: 3, ease: 'sine.inOut', onUpdate: drawSoon });
-  gsap.from(select('.entry-inner'), {
-    y: 36, scrollTrigger: { trigger: '.cinema-entry', start: 'top bottom', end: 'center center', scrub: true },
-  });
+  timeline
+    .to(state, { phase: 1, duration: 1, ease: 'none' }, 0)
+    .to(select('.cinema-scroll'), { autoAlpha: 0, y: 8, duration: .043 }, .006)
+    .to(state, { chipTurn: .72, chipSize: 1.15, cameraMove: -.72, duration: .083 }, .018)
+    .to(select('.scene-chip h1 span:first-child'), { xPercent: -7, duration: .078 }, .066)
+    .to(select('.scene-chip h1 span:last-child'), { xPercent: 10, duration: .078 }, .066)
+    .to(select('.scene-chip'), { autoAlpha: 0, y: -17, duration: .075 }, .088)
+    .to(state, { chipTurn: 1.4, chipSize: 0, fanSize: 1, cameraMove: .16, duration: .10 }, .092)
+    .to(state, { rotor: 2.1, fanTurn: .7, cameraMove: -.50, duration: .123, ease: 'sine.out' }, .178)
+    .to(state, { split: 1, duration: .113 }, .298)
+    .to(state, { rotor: 2.37, duration: .027, ease: 'power2.out' }, .301)
+    .from(select('.fan-labels li strong, .fan-labels li small'), {
+      autoAlpha: 0, y: 7, duration: .04, stagger: .009, immediateRender: false,
+    }, .323)
+    .to(state, { fanSize: 0, boardSize: 1, cameraMove: -.01, duration: .111 }, .405)
+    .to(state, { boardTurn: .74, split: 0, duration: .112 }, .434)
+    .fromTo(select('.scene-board h2 b'), { yPercent: 106 }, {
+      yPercent: 0, duration: .043, stagger: .024, immediateRender: false,
+    }, .468)
+    .to(state, { water: 1, cameraMove: .69, duration: .139 }, .549)
+    .to(select('.cinema-grid, .cinema-orbit'), { opacity: 0, duration: .12 }, .545)
+    .to(state, { sink: 1, boardSize: 0, boardTurn: 1.8, duration: .227, ease: 'sine.in' }, .557)
+    .to(state, { rise: 1, duration: .282, ease: 'sine.inOut' }, .660)
+    .to(state, { spread: 1, duration: .155, ease: 'sine.inOut' }, .845)
+    .fromTo(select('.entry-link'), {
+      autoAlpha: 0, x: () => compact.matches ? 0 : stage.clientWidth * .23, y: () => -stage.clientHeight * .60, scale: .92,
+    }, {
+      autoAlpha: .92, y: () => stage.clientHeight * .22, scale: .92, duration: .102,
+      immediateRender: false, ease: 'sine.in',
+    }, .764)
+    .to(select('.entry-link'), { autoAlpha: 1, x: 0, y: 0, scale: 1, duration: .11 }, .866)
+    .fromTo(select('.entry-copy'), { autoAlpha: 0, y: 18 }, {
+      autoAlpha: 1, y: 0, duration: .083, immediateRender: false,
+    }, .919);
+  crossfade('.scene-fan', .144, .285);
+  crossfade('.scene-exploded', .300, .428);
+  crossfade('.scene-board', .462, .545, .061);
   drawSoon();
 
   let timer;
-  if ('WebGL2RenderingContext' in window && !navigator.connection?.saveData && (navigator.deviceMemory ?? 4) >= 4) {
+  if ('WebGL2RenderingContext' in window && !navigator.connection?.saveData) {
     timer = setTimeout(async () => {
       try {
         const { mountScene } = await import('./landing-scene.js');
@@ -155,7 +166,7 @@ function setupLanding() {
           drawSoon();
         }
       } catch {
-        // Each CSS model follows the same timeline when WebGL is unavailable.
+        // The CSS models and the login links remain available without a working context.
       }
     }, 300);
   }
@@ -164,6 +175,8 @@ function setupLanding() {
     disposed = true;
     clearTimeout(timer);
     cancelAnimationFrame(frame);
+    visibility.disconnect();
+    document.removeEventListener('visibilitychange', drawSoon);
     pointer.dispose();
     model?.dispose();
     [stage, chip, fan, board, ...labels.map(({ line }) => line)].forEach((node) => node.removeAttribute('style'));

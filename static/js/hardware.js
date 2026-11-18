@@ -4,9 +4,9 @@ const metal = (color, roughness = .38) =>
   new THREE.MeshStandardMaterial({ color, roughness, metalness: .58 });
 const polymer = (color) =>
   new THREE.MeshStandardMaterial({ color, roughness: .68, metalness: .15 });
-const anodized = metal(0x568fbc);
-const steel = metal(0xaabfd3);
-const graphite = polymer(0x192638);
+const anodized = metal(0x657b89);
+const steel = metal(0xa4a9ae);
+const graphite = polymer(0x20242b);
 const solder = metal(0xc8ac79);
 
 function mesh(parent, geometry, material, x = 0, y = 0, z = 0) {
@@ -60,38 +60,81 @@ function circularHole(outline, x, y, radius) {
   outline.holes.push(cutout);
 }
 
-function etchedMark(text, caption) {
+function brushedMetal() {
   const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = 256;
+  canvas.width = 256;
+  canvas.height = 128;
   const ink = canvas.getContext('2d');
-  ink.strokeStyle = '#a3c5e2';
-  ink.lineWidth = 2;
-  ink.strokeRect(18, 18, 220, 220);
-  ink.fillStyle = '#edf6ff';
-  ink.textAlign = 'center';
-  ink.font = 'bold 76px system-ui';
-  ink.fillText(text, 128, 139);
-  ink.font = '16px monospace';
-  ink.fillText(caption, 128, 175);
-  const map = new THREE.CanvasTexture(canvas);
-  map.colorSpace = THREE.SRGBColorSpace;
-  return new THREE.MeshBasicMaterial({ map, transparent: true, depthWrite: false });
+  for (let row = 0; row < canvas.height; row++) {
+    const tone = 123 + Math.floor(19 * Math.sin(row * 153.3) + 12 * Math.cos(row * 26.4));
+    ink.fillStyle = `rgb(${tone} ${tone} ${tone})`;
+    ink.fillRect(0, row, canvas.width, 1);
+  }
+  const roughnessMap = new THREE.CanvasTexture(canvas);
+  const lid = metal(0xb7b8ba, .61);
+  lid.roughnessMap = roughnessMap;
+  lid.bumpMap = roughnessMap;
+  lid.bumpScale = .0017;
+  return lid;
 }
 
 export function createChip() {
   const chip = new THREE.Group();
-  box(chip, polymer(0x234a68), 2.26, 2.26, .12, 0, 0, -.1);
-  box(chip, anodized, 2, 2, .12, 0, 0, 0);
-  mesh(chip, machined(blockOutline(1.73, 1.73, .16), .16), steel, 0, 0, .09);
-  box(chip, metal(0x455e79), 1.48, 1.48, .02, 0, 0, .284);
-  mesh(chip, new THREE.PlaneGeometry(1.4, 1.4), etchedMark('TS', 'TECHSTOCK'), 0, 0, .3);
+  box(chip, polymer(0x26372f), 2.26, 2.11, .075, 0, 0, -.09);
+  box(chip, polymer(0x394141), 2.04, 1.9, .034, 0, 0, -.035);
+  mesh(chip, machined(blockOutline(1.89, 1.77, .12), .095), steel, 0, 0, -.008);
+  box(chip, brushedMetal(), 1.71, 1.58, .021, 0, 0, .115);
+  repeated(chip, new THREE.BoxGeometry(.036, .019, .013), steel,
+    Array.from({ length: 22 }, (_, i) => [(i % 11 - 5) * .092, i < 11 ? .935 : -.935, -.033]));
 
   const pins = Array.from({ length: 17 }, (_, index) => (index - 8) * .116);
   repeated(chip, new THREE.BoxGeometry(.048, .16, .07), solder,
-    pins.flatMap((x) => [[x, 1.07, -.02], [x, -1.07, -.02]]));
+    pins.flatMap((x) => [[x, .97, -.09], [x, -.97, -.09]]));
   repeated(chip, new THREE.BoxGeometry(.16, .048, .07), solder,
     pins.flatMap((y) => [[1.07, y, -.02], [-1.07, y, -.02]]));
   return chip;
+}
+
+function curvedBlade() {
+  const positions = [];
+  const triangles = [];
+  const span = 22;
+  const chord = 12;
+  const layer = (span + 1) * (chord + 1);
+  for (const face of [-1, 1]) {
+    for (let row = 0; row <= span; row++) {
+      const t = row / span;
+      for (let col = 0; col <= chord; col++) {
+        const u = col / chord;
+        const width = .19 + .28 * Math.sin(t * 2.6);
+        const angle = .18 - t * .48 + (u - .5) * width / (.3 + t * .76);
+        const radius = .265 + t * (.92 - .045 * (2 * u - 1) ** 2);
+        const camber = Math.sin(u * Math.PI) * (.07 + .038 * t);
+        positions.push(radius * Math.cos(angle), radius * Math.sin(angle),
+          camber + (u - .5) * (.17 - .086 * t) + face * (.008 + .016 * Math.sin(u * Math.PI)));
+        if (row === span || col === chord) continue;
+        const a = (face === 1 ? layer : 0) + row * (chord + 1) + col;
+        const b = a + chord + 1;
+        if (face === 1) triangles.push(a, b, a + 1, b, b + 1, a + 1);
+        else triangles.push(a, a + 1, b, b, a + 1, b + 1);
+      }
+    }
+  }
+  const perimeter = [
+    ...Array.from({ length: chord }, (_, i) => i),
+    ...Array.from({ length: span }, (_, i) => i * (chord + 1) + chord),
+    ...Array.from({ length: chord }, (_, i) => span * (chord + 1) + chord - i),
+    ...Array.from({ length: span }, (_, i) => (span - i) * (chord + 1)),
+  ];
+  perimeter.forEach((a, i) => {
+    const b = perimeter[(i + 1) % perimeter.length];
+    triangles.push(a, b, b + layer, a, b + layer, a + layer);
+  });
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setIndex(triangles);
+  geometry.computeVertexNormals();
+  return geometry;
 }
 
 export function createFan() {
@@ -100,18 +143,21 @@ export function createFan() {
   const support = new THREE.Group();
   const rotor = new THREE.Group();
   const hub = new THREE.Group();
-  model.add(support, rotor, hub, frame);
+  const fasteners = new THREE.Group();
+  model.add(support, hub, rotor, frame, fasteners);
 
   const rim = blockOutline(2.72, 2.72, .28);
   circularHole(rim, 0, 0, 1.23);
   for (const x of [-1.13, 1.13]) {
     for (const y of [-1.13, 1.13]) {
       circularHole(rim, x, y, .096);
-      cylinder(frame, steel, .108, .048, x, y, .22, 18);
-      box(frame, graphite, .107, .024, .006, x, y, .248);
+      cylinder(fasteners, steel, .107, .048, x, y, .016, 24);
+      cylinder(fasteners, anodized, .047, .15, x, y, -.073, 12);
+      box(fasteners, graphite, .109, .023, .008, x, y, .042);
+      box(fasteners, graphite, .023, .109, .008, x, y, .042);
     }
   }
-  mesh(frame, machined(rim, .19), metal(0x32475d));
+  mesh(frame, machined(rim, .19), polymer(0x1d252c));
   const collar = new THREE.TorusGeometry(1.213, .026, 8, 64);
   mesh(frame, collar, anodized, 0, 0, .208);
   const back = blockOutline(2.64, 2.64, .25);
@@ -122,33 +168,25 @@ export function createFan() {
     const strut = box(support, graphite, 1.35, .16, .09, Math.cos(angle) * .64, Math.sin(angle) * .64, .07);
     strut.rotation.z = angle;
   }
-  cylinder(support, graphite, .4, .18, 0, 0, .08);
-  cylinder(support, steel, .13, .27, 0, 0, .22, 24);
-  cylinder(hub, anodized, .355, .19, 0, 0, .02);
-  cylinder(hub, graphite, .284, .025, 0, 0, .128);
-  mesh(hub, new THREE.TorusGeometry(.236, .012, 8, 36), steel, 0, 0, .145);
-  cylinder(hub, steel, .059, .028, 0, 0, .148, 16);
-
-  const profile = new THREE.Shape();
-  profile.moveTo(.21, -.084);
-  profile.bezierCurveTo(.52, -.03, .95, -.03, 1.141, -.39);
-  profile.bezierCurveTo(1.16, -.28, 1.201, -.085, 1.157, .12);
-  profile.bezierCurveTo(1.015, .42, .53, .38, .24, .14);
-  profile.closePath();
-  const blade = machined(profile, .052);
-  const bladeMaterial = metal(0x6b9ab9, .47);
+  cylinder(hub, graphite, .35, .16, 0, 0, .02);
+  cylinder(hub, steel, .09, .24, 0, 0, .15, 24);
+  mesh(hub, new THREE.TorusGeometry(.26, .025, 9, 32), metal(0xa55b38), 0, 0, .109);
+  cylinder(rotor, graphite, .302, .145, 0, 0, .025);
+  cylinder(rotor, anodized, .238, .019, 0, 0, .104);
+  const blade = curvedBlade();
+  const bladeMaterial = polymer(0x4b555e);
   for (let index = 0; index < 7; index++) {
     const bladeMesh = mesh(rotor, blade, bladeMaterial);
     bladeMesh.rotation.z = index * Math.PI * 2 / 7;
   }
-  return { model, frame, support, rotor, hub };
+  return { model, frame, support, rotor, hub, fasteners };
 }
 
 export function createMotherboard() {
   const board = new THREE.Group();
-  const pcb = polymer(0x153952);
+  const pcb = polymer(0x203832);
   const socket = metal(0xa5bfcb);
-  const slots = polymer(0x3474a5);
+  const slots = polymer(0x344956);
   const dark = polymer(0x0c1826);
   const sink = metal(0x557c99);
   const base = blockOutline(3.8, 3.08, .075);
@@ -181,6 +219,20 @@ export function createMotherboard() {
     box(board, steel, .3, .31, .27, -1.75, y, .139);
     box(board, dark, .012, .23, .115, -1.902, y, .18);
   }
+  box(board, graphite, .23, .77, .16, 1.66, .73, .093);
+  repeated(board, new THREE.BoxGeometry(.047, .042, .025), dark,
+    Array.from({ length: 20 }, (_, index) => [1.616 + (index % 2) * .083, .42 + Math.floor(index / 2) * .069, .178]));
+  for (const y of [-.66, -.99]) {
+    box(board, graphite, .225, .25, .117, 1.72, y, .07);
+    box(board, dark, .02, .16, .048, 1.839, y, .088);
+  }
+  cylinder(board, steel, .164, .038, .61, -1.21, .075, 30);
+  mesh(board, new THREE.TorusGeometry(.167, .015, 7, 30), graphite, .61, -1.21, .086);
+  repeated(board, new THREE.BoxGeometry(.04, .028, .012), solder,
+    Array.from({ length: 48 }, (_, index) => {
+      const row = Math.floor(index / 12);
+      return [-1.48 + (index % 12) * .087, -1.42 + row * .063, -.015];
+    }));
   repeated(board, new THREE.BoxGeometry(.22, .042, .27), sink,
     Array.from({ length: 17 }, (_, index) => [-1.29, .1 + index * .07, .14]));
   repeated(board, new THREE.BoxGeometry(.048, .43, .24), sink,

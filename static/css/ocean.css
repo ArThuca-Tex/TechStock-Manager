@@ -1,0 +1,162 @@
+.ocean-light, .ocean-fallback { position: absolute; inset: 0; opacity: 0; }
+.ocean-light {
+  opacity: var(--water, 0);
+  background:
+    radial-gradient(ellipse at 50% 9%, #427eb966, transparent 46%),
+    radial-gradient(ellipse at 72% 48%, #503c8c75, transparent 57%),
+    radial-gradient(ellipse at 27% 53%, #224b766e, transparent 58%),
+    linear-gradient(174deg, #0b1539, #090c20 70%, #080c18);
+}
+.ocean-light::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: conic-gradient(from 162deg at 49% -13%, transparent, #9bd8ff26 7deg, transparent 15deg,
+    #739de726 21deg, transparent 35deg, #b8d7ff20 44deg, transparent 51deg);
+  mask-image: linear-gradient(#000, transparent 78%);
+  transform: translateX(var(--light-drift, 0));
+}
+.ocean-fallback { opacity: var(--water, 0); pointer-events: none; }
+.has-webgl .ocean-fallback { visibility: hidden; }
+.cinema-crystal { opacity: max(0, calc(1 - var(--water, 0) * 1.35)); }
+.jelly-css {
+  position: absolute;
+  top: calc(108% - var(--rise, 0) * 145%);
+  left: 50%;
+  width: clamp(8rem, 29vmin, 19rem);
+  aspect-ratio: 1;
+  opacity: var(--jelly-opacity, 0);
+  transform: translateX(-50%) rotate(calc(var(--current, 0) * 5deg));
+}
+.jelly-bell {
+  position: absolute;
+  z-index: 1;
+  width: 100%;
+  height: 51%;
+  border: 1px solid #9cdbff;
+  border-radius: 54% 54% 45% 45% / 89% 89% 21% 21%;
+  background:
+    repeating-radial-gradient(ellipse at 50% 85%, #8970ec22 0 7px, transparent 8px 18px),
+    radial-gradient(ellipse at 37% 17%, #c1e5ffa1, #6384dd48 41%, #a586ee73 78%, #71b7ffbc);
+  box-shadow: inset 0 -.38rem 1.5rem #8eaafc91, 0 0 2rem #7386ee33;
+  transform: scaleX(calc(1 - var(--current, 0) * .07));
+}
+.jelly-css i {
+  position: absolute;
+  top: calc(43% + mod(var(--strand), 3) * 1%);
+  left: calc(10% + var(--strand) * 6.1%);
+  width: 13%;
+  height: calc(52% + mod(var(--strand), 5) * 8%);
+  border: solid #c0baff;
+  border-width: 0 0 0 1px;
+  border-radius: 45% 33% 47% 52%;
+  opacity: .5;
+  transform: skewX(calc((var(--strand) - 6) * -.9deg + var(--current, 0) * 5deg));
+  mask-image: linear-gradient(#000, #0008 65%, transparent);
+}
+.swarm-css { position: absolute; inset: 0; opacity: var(--swarm-opacity, 0); }
+.swarm-css i {
+  position: absolute;
+  top: calc(13% + mod(var(--jelly) * 19%, 74%) + (1 - var(--rise, 0)) * 34%);
+  left: calc(8% + mod(var(--jelly) * 13%, 83%));
+  width: calc(8px + mod(var(--jelly), 5) * 5px);
+  aspect-ratio: 1.6;
+  border: 1px solid #8cceff9b;
+  border-radius: 60% 60% 40% 40%;
+  background: #7782dc64;
+  transform: translate(
+    calc((mod(var(--jelly), 7) - 3) * var(--spread, 0) * 2vw),
+    calc((mod(var(--jelly), 5) - 2) * var(--spread, 0) * 3vh + var(--current, 0) * 7px)
+  ) rotate(calc((mod(var(--jelly), 5) - 2) * 9deg));
+}
+.swarm-css i::after {
+  content: '';
+  position: absolute;
+  top: 81%;
+  left: 25%;
+  width: 53%;
+  height: 135%;
+  border: solid #99ace78a;
+  border-width: 0 1px;
+  border-radius: 50%;
+}
+.cinema-scroll {
+  display: none;
+  position: absolute;
+  left: var(--edge);
+  bottom: clamp(1rem, 4vh, 2.6rem);
+  margin: 0;
+  color: #bdcee1;
+  font: .67rem var(--mono);
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+.is-animated .cinema-scroll { display: block; }
+.is-animated .cinema-entry {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  min-height: 0;
+  background: none;
+  pointer-events: none;
+}
+.is-animated .entry-copy, .is-animated .entry-link { opacity: 0; visibility: hidden; }
+.entry-link { pointer-events: auto; }
+.entry-copy p { line-height: 1.6; }
+.entry-copy, .scene-board { text-shadow: 0 2px 24px #080a17b3; }
+.cinema-entry { border: 0; }
+.cinema:not(.is-animated) .cinema-entry {
+  position: relative;
+  isolation: isolate;
+  background: radial-gradient(ellipse at 50% 0, #283e6b, #10132d 52%, #080c18 83%);
+}
+.cinema:not(.is-animated) .cinema-entry::before,
+.cinema:not(.is-animated) .cinema-entry::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  left: 50%;
+  translate: -50% 0;
+  width: clamp(8rem, 25vw, 23rem);
+  opacity: .32;
+}
+.cinema:not(.is-animated) .cinema-entry::before {
+  top: 8%;
+  aspect-ratio: 2.15;
+  border: 1px solid #a5d9ff;
+  border-radius: 54% 54% 45% 45% / 89% 89% 21% 21%;
+  background: radial-gradient(ellipse at 43% 29%, #bfdfff, #6765a756 56%, #a09ceeaa);
+}
+.cinema:not(.is-animated) .cinema-entry::after {
+  top: calc(8% + clamp(3.65rem, 10vw, 9.85rem));
+  height: 40%;
+  background: repeating-linear-gradient(94deg, #b9bef2 0 1px, transparent 1px 17px);
+  mask-image: radial-gradient(ellipse at 50% 0, #000, transparent 71%);
+}
+.cinema:not(.is-animated) .cinema-scene + .cinema-scene { border: 0; }
+.cinema.is-animated .scene-board { text-align: left; }
+.cinema.is-animated .scene-board h2 span:last-child { font-size: clamp(3rem, 10vw, 11rem); }
+.cinema.is-animated .scene-board .scene-lead { margin-inline: 0; }
+.cinema.is-animated .scene-fan h2 { font-size: clamp(2.1rem, 4.2vw, 5.4rem); }
+.fan-stack {
+  transform: translate(calc(var(--explode, 0) * 7vw), 1vh)
+    rotateX(calc(-17deg - var(--explode, 0) * 61deg)) rotateY(calc(-18deg * (1 - var(--explode, 0))));
+}
+.fan-frame { transform: translateZ(calc(18px + var(--fan-depth, 0px) * 2)); }
+.fan-support { transform: translateZ(calc(-6px - var(--fan-depth, 0px) * 2)); }
+.fan-hub { transform: translateZ(calc(3px - var(--fan-depth, 0px) * .74)); }
+.fan-rotor { transform: translateZ(9px) rotate(var(--rotor, 0deg)); }
+.chip-stack i:last-child {
+  background:
+    repeating-linear-gradient(1deg, #ffffff12 0 1px, #21212410 1px 3px),
+    linear-gradient(115deg, #8a989e, #c5cdd0 24%, #6c7881 66%, #b9c5cb);
+  border-color: #abb6bb;
+}
+@media (max-width: 760px) {
+  .cinema.is-animated .scene-fan { top: 63%; }
+  .cinema.is-animated .scene-fan h2 { font-size: clamp(1.75rem, 7.4vw, 3.8rem); }
+  .cinema.is-animated .scene-board { top: 35%; }
+  .cinema.is-animated .scene-board h2 span:last-child { font-size: clamp(2.45rem, 13vw, 6rem); }
+  .fan-stack { transform: translate(0, calc(-11vh + var(--explode, 0) * 4vh))
+    rotateX(calc(-17deg - var(--explode, 0) * 61deg)); }
+}

@@ -1,18 +1,54 @@
 import * as THREE from '../vendor/three.module.min.js';
 import { createChip, createFan, createMotherboard } from './hardware.js';
+import { createOcean } from './ocean-scene.js';
+import { landingQuality } from './landing-quality.js';
+
+function makeEnvironment(renderer) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 256;
+  const surface = canvas.getContext('2d');
+  surface.fillStyle = '#222832';
+  surface.fillRect(0, 0, 512, 256);
+  for (const [x, y, w, h, light] of [[76, 60, 147, 48, '#e6e7e5'], [281, 77, 66, 37, '#729dcd'], [378, 146, 96, 22, '#afb6be']]) {
+    const gradient = surface.createRadialGradient(x, y, 0, x, y, w / 2);
+    gradient.addColorStop(0, light);
+    gradient.addColorStop(1, 'transparent');
+    surface.save();
+    surface.translate(x, y);
+    surface.scale(1, h / w);
+    surface.translate(-x, -y);
+    surface.fillStyle = gradient;
+    surface.fillRect(x - w / 2, y - w / 2, w, w);
+    surface.restore();
+  }
+  const source = new THREE.CanvasTexture(canvas);
+  source.colorSpace = THREE.SRGBColorSpace;
+  const generator = new THREE.PMREMGenerator(renderer);
+  const environment = generator.fromEquirectangular(source);
+  source.dispose();
+  generator.dispose();
+  return environment;
+}
 
 export function mountScene(host, state, onContextLost) {
   const canvas = document.createElement('canvas');
-  const attributes = { alpha: true, antialias: true, powerPreference: 'low-power' };
+  const quality = landingQuality();
+  const attributes = { alpha: true, antialias: quality.antialias, powerPreference: 'low-power' };
   const context = canvas.getContext('webgl2', attributes);
   if (!context) return null;
   const renderer = new THREE.WebGLRenderer({ ...attributes, canvas, context });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+  renderer.setPixelRatio(quality.pixelRatio);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.17;
   host.append(canvas);
 
   const scene = new THREE.Scene();
+  const environment = makeEnvironment(renderer);
+  scene.environment = environment.texture;
+  scene.environmentIntensity = .76;
+  const ocean = createOcean(quality);
+  scene.add(ocean.group);
   const camera = new THREE.PerspectiveCamera(34, 1, .1, 60);
   const key = new THREE.DirectionalLight(0xd5e8ff, 3.6);
   const edge = new THREE.DirectionalLight(0x258cff, 3.5);
@@ -47,49 +83,76 @@ export function mountScene(host, state, onContextLost) {
   scene.add(...crystals);
 
   const pointer = new THREE.Vector2();
+  const steering = new THREE.Vector2();
   const projected = new THREE.Vector3();
   const aim = new THREE.Vector3();
   const crystalOffsets = crystals.map(() => new THREE.Vector2());
   let width = 0;
   let height = 0;
   let lost = false;
+  let lastFrame = 0;
+  let slowFrames = 0;
 
-  function render() {
+  function render(now = 0) {
     if (lost || !width || !height) return false;
-    const { chipSize, chipTurn, fanSize, fanTurn, rotor, split, boardSize, boardTurn, cameraMove, phase, ambient } = state;
-    const compact = width < 670;
+    const { chipSize, chipTurn, fanSize, fanTurn, rotor, split, boardSize, boardTurn, cameraMove, phase, ambient, water, sink, rise } = state;
+    const compact = width < 760;
     const horizontal = Math.min(1, width / 1040);
+    const time = now / 1000;
+    const wantedX = Math.abs(pointer.x) <= 1 ? pointer.x : 0;
+    const wantedY = Math.abs(pointer.y) <= 1 ? pointer.y : 0;
+    steering.x = THREE.MathUtils.lerp(steering.x, wantedX, .075);
+    steering.y = THREE.MathUtils.lerp(steering.y, wantedY, .075);
+    ocean.update(time, state, steering, compact);
 
-    camera.position.set(.3 + cameraMove * .55, .35 - cameraMove * .28, compact ? 9.8 : 8.05 + cameraMove * .65);
+    const fit = compact ? Math.max(11, 6.9 * height / width) : 8.35;
+    camera.position.set(.16 + cameraMove * .32, .35 - cameraMove * .28 + water * .43 + rise * .26,
+      fit + split * (compact ? 1.9 : 3.35) + cameraMove * .76 + water * .66);
     camera.lookAt(0, 0, 0);
     key.position.set(-3.1 + 2.1 * cameraMove, 4.5, 5.8);
     edge.position.set(3.7, 1.1 + cameraMove, -3.1);
-    edge.intensity = 3.1 + split * 1.5;
+    edge.intensity = 2 + split * .82 + water * 1.3;
+    key.intensity = 3.4 - water * 1.7;
+    scene.environmentIntensity = .76 - water * .39;
 
-    chip.visible = chipSize > .012;
+    const falling = sink > .001 && sink < .998;
+    const sinkArc = Math.pow(Math.max(0, Math.sin(sink * Math.PI)), .68);
+    chip.visible = chipSize > .012 || falling;
     chip.position.set((compact ? .05 : .83 * horizontal) + chipTurn * .63, compact ? -.49 : -.58, -.33 - chipTurn * .15);
     chip.rotation.set(-.49 + .1 * chipTurn, -.27 + .48 * chipTurn, -.37 + .6 * chipTurn + ambient * .025);
     chip.scale.setScalar(chipSize * (compact ? .76 : 1));
+    if (falling) {
+      chip.position.set((compact ? -1.05 : -2.35) + Math.sin(sink * 5 + time * .55) * .47, 3.9 - sink * 9.4, -1.3 - sink * 4.7);
+      chip.rotation.set(-.65 + sink * 2, -.33 + sink * .8, -.4 + sink * 1.4);
+      chip.scale.setScalar(sinkArc * .66);
+    }
 
-    fan.model.visible = fanSize > .012;
-    fan.model.position.set(compact ? .05 : 1.35 * horizontal, compact ? .62 : -.05, -.15 - split * .27);
-    fan.model.rotation.set(-.22 + fanTurn * .27, -.42 - split * .3 + fanTurn * .22, -.14 + fanTurn * .26);
-    fan.model.scale.setScalar(fanSize * (compact ? .64 : 1) * (1 - split * .11));
-    fan.frame.position.set(.16 * split, .89 * split, .24 + 1.12 * split);
-    fan.frame.rotation.x = -.11 * split;
-    fan.support.position.set(.41 * split, -.82 * split, -.19 - 1.03 * split);
-    fan.rotor.position.set(-.39 * split, .28 * split, .057 + .45 * split);
-    fan.rotor.rotation.z = rotor + ambient * .35;
-    fan.hub.position.set(.43 * split, -.24 * split, .08 + .86 * split);
+    fan.model.visible = fanSize > .012 || falling;
+    fan.model.position.set(compact ? .0 : split * .68 * horizontal, compact ? .52 - split * .25 : -.05, -.17);
+    fan.model.rotation.set(THREE.MathUtils.lerp(-.19 + fanTurn * .13, -1.39, split), -.24 * (1 - split), -.09 * (1 - split));
+    fan.model.scale.setScalar(fanSize * (compact ? .65 : 1) * (1 - split * .13));
+    // All five parts move along the same local axis. Tilting the assembly exposes that axis vertically.
+    const spacing = falling ? 0 : split;
+    fan.support.position.z = -.27 - 1.66 * spacing;
+    fan.hub.position.z = -.15 - .88 * spacing;
+    fan.rotor.position.z = .018 - .07 * spacing;
+    fan.frame.position.z = .15 + .77 * spacing;
+    fan.fasteners.position.z = .348 + 1.55 * spacing;
+    fan.rotor.rotation.z = rotor + state.spin;
+    if (falling) {
+      fan.model.position.set((compact ? .92 : 2.17) + Math.sin(sink * 6 + .8) * .58, 4.45 - sink * 9.7, -2.3 - sink * 4.5);
+      fan.model.rotation.set(-.5 + sink * 1.9, -.35 + sink * 1.16, sink * -.75);
+      fan.model.scale.setScalar(sinkArc * .59);
+    }
 
     board.visible = boardSize > .012;
-    board.position.set(compact ? .06 : .48 * horizontal, -.49 + boardTurn * .25, -boardTurn * .6);
+    board.position.set(compact ? .36 : 1.63 * horizontal, -.45 + boardTurn * .25 - sink * 7.4, -boardTurn * .6 - sink * 3.7);
     board.rotation.set(-.4 + boardTurn * .27, .19 - boardTurn * .5, -.18 + boardTurn * .2);
     board.scale.setScalar(boardSize * (compact ? .63 : 1));
 
     let moving = false;
     crystals.forEach((object, index) => {
-      object.visible = !compact || index < 2;
+      object.visible = water < .82 && (!compact || index < 2);
       if (!object.visible) return;
       const side = index === 1 ? 1 : -1;
       const x = (compact ? 1.05 : 2.43 * horizontal) * side + index * .12 + Math.sin(phase + index) * .32;
@@ -106,11 +169,20 @@ export function mountScene(host, state, onContextLost) {
       offset.x = THREE.MathUtils.lerp(offset.x, targetX, .12);
       offset.y = THREE.MathUtils.lerp(offset.y, targetY, .12);
       moving ||= Math.abs(offset.x - targetX) + Math.abs(offset.y - targetY) > .0005;
-      object.position.set(x + offset.x * 3, y + offset.y * 3 + ambient * .06 * side, z);
+      object.position.set(x + offset.x * 3, y + offset.y * 3 + ambient * .06 * side - water * 3.5, z);
+      const breath = 1 - water;
+      object.scale.set(breath, breath * (index === 0 ? 1.6 : 1), breath * (index === 0 ? .62 : index === 1 ? 1.65 : 1));
       object.rotation.set(phase * (.19 + .13 * index) + offset.y * 4, index + phase * .34, phase * side * .23 - offset.x * 4);
       facets[index].material.opacity = .21 + Math.hypot(offset.x, offset.y) * 1.9;
     });
     renderer.render(scene, camera);
+    if (water > .11 && now - lastFrame > 30 && now - lastFrame < 175) slowFrames++;
+    else slowFrames = Math.max(0, slowFrames - 1);
+    lastFrame = now;
+    if (slowFrames > 36 && renderer.getPixelRatio() > quality.minPixelRatio) {
+      renderer.setPixelRatio(Math.max(quality.minPixelRatio, renderer.getPixelRatio() - .18));
+      slowFrames = 0;
+    }
     return moving;
   }
 
@@ -157,8 +229,10 @@ export function mountScene(host, state, onContextLost) {
       geometries.forEach((geometry) => geometry.dispose());
       materials.forEach((material) => {
         material.map?.dispose();
+        material.roughnessMap?.dispose();
         material.dispose();
       });
+      environment.dispose();
       renderer.dispose();
       renderer.forceContextLoss();
       canvas.remove();

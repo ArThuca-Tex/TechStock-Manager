@@ -116,8 +116,6 @@ a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 5px; }
   box-shadow: 0 6px #122f50, inset 0 0 0 5px #122e5055;
   font-style: normal;
 }
-.chip-stack b { font: 700 clamp(2rem, 6vmin, 4rem) var(--heading); }
-.chip-stack small { font: 600 clamp(.46rem, 1vmin, .68rem) var(--mono); }
 .fan-css, .board-css { opacity: 0; }
 .fan-stack {
   width: clamp(9rem, 36vmin, 24rem);
@@ -222,11 +220,11 @@ a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 5px; }
   min-height: 0;
 }
 .cinema.is-animated .scene-chip { padding-block: 0 18vh; }
-.cinema:not(.is-animated) .cinema-scene + .cinema-scene { border-top: 1px solid #263247; background: var(--night); }
+.cinema:not(.is-animated) .cinema-scene + .cinema-scene { background: var(--night); }
 .cinema.is-animated .cinema-scene:not(.scene-chip) { visibility: hidden; opacity: 0; }
 .scene-fan h2 { font-size: clamp(2.3rem, 6.2vw, 7rem); text-wrap: balance; max-width: 9ch; }
 .scene-exploded h2 { font: 600 .74rem var(--mono); letter-spacing: .18em; margin-bottom: 1.3rem; }
-.fan-labels, .system-modules { list-style: none; margin: 0; padding: 0; }
+.fan-labels { list-style: none; margin: 0; padding: 0; }
 .fan-labels { display: grid; gap: clamp(.9rem, 4vh, 2.4rem); }
 .fan-labels li { position: relative; width: max-content; }
 .fan-labels strong, .fan-labels small { display: block; }
@@ -245,50 +243,13 @@ a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 5px; }
 }
 .cinema.is-animated .fan-labels i { opacity: .8; }
 .fan-labels i::after { content: ''; position: absolute; right: 0; top: -2px; width: 5px; height: 5px; border-radius: 50%; background: var(--cyan); }
-.scene-board, .scene-system { text-align: center; }
-.scene-board h2 span, .scene-system h2 span { display: block; }
+.scene-board { text-align: center; }
+.scene-board h2 span { display: block; }
 .scene-board h2 span { overflow: hidden; padding-bottom: .14em; }
 .scene-board h2 span:first-child { font-size: clamp(1.6rem, 4.3vw, 4.5rem); color: #c7d9ef; }
 .scene-board h2 span:last-child { color: var(--ice); font-size: clamp(2.8rem, 16vw, 17rem); }
 .scene-board h2 b { display: block; font-weight: inherit; }
 .scene-board .scene-lead { margin: .8rem auto 0; }
-.scene-system h2 { font-size: clamp(1.45rem, 5.6vw, 6.2rem); }
-.scene-system h2 span { margin-bottom: .13em; }
-.scene-system h2 span:last-child { color: #74d7f4; }
-.system-modules {
-  width: min(54rem, 100%);
-  margin: 1.2rem auto 0;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: .45rem;
-  perspective: 750px;
-}
-.system-modules li {
-  min-width: 0;
-  padding: .8rem .4rem;
-  border: 1px solid #3d5d84;
-  background: #0d1c30;
-  font-size: clamp(.7rem, 1.35vw, .9rem);
-  overflow-wrap: anywhere;
-}
-.system-modules span { display: block; margin-bottom: .25rem; color: var(--cyan); font-size: 1.05rem; }
-.cinema-track {
-  display: none;
-  position: absolute;
-  bottom: clamp(.8rem, 3vh, 2rem);
-  inset-inline: var(--edge);
-  padding-top: .65rem;
-  border-top: 1px solid #506786;
-  color: #c1d7f0;
-  text-transform: uppercase;
-  letter-spacing: .1em;
-  font: .7rem var(--mono);
-  gap: 1.5rem;
-  align-items: center;
-}
-.cinema.is-animated .cinema-track { display: flex; }
-.cinema-track i { flex: 1; height: 1px; background: #274058; }
-.cinema-track i::after { content: ''; height: 100%; display: block; background: #77cfee; transform: scaleX(var(--progress, 0)); transform-origin: left; }
 .cinema-entry {
   min-height: min(76svh, 740px);
   display: grid;
@@ -296,7 +257,7 @@ a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 5px; }
   padding: 5rem var(--edge);
   text-align: center;
   background: radial-gradient(ellipse at center, #10243e, var(--night) 69%);
-  border-top: 1px solid #263247;
+
 }
 .cinema-entry h2 { font-size: clamp(2.5rem, 8.6vw, 9rem); }
 .cinema-entry h2 span { display: block; color: #9abada; }
@@ -314,7 +275,6 @@ a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 5px; }
   .fan-labels { gap: .52rem; }
   .fan-labels i { display: none; }
   .scene-chip .scene-lead { font-size: .88rem; }
-  .system-modules { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .scene-board h2 span:last-child { font-size: clamp(2.65rem, 16vw, 17rem); }
 }
 @media (prefers-reduced-motion: reduce) {
