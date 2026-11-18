@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="TechStock Manager, gestão de inventário tecnológico.">
+  <title>TechStock Manager | Inventário tecnológico</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" type="image/png">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/intro.css') }}">
+  <script src="{{ url_for('static', filename='vendor/gsap.min.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='vendor/ScrollTrigger.min.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/intro.js') }}" type="module"></script>
+</head>
+<body>
+<main class="cinema">
+  <header class="cinema-header">
+    <a class="cinema-brand" href="{{ url_for('dashboard') }}" aria-label="TechStock Manager, início">
+      <span class="cinema-mark" aria-hidden="true">TS</span> TechStock <small>MANAGER</small>
+    </a>
+    <a class="cinema-link" href="{{ url_for('login') }}">ENTRAR <span aria-hidden="true">↗</span></a>
+  </header>
+  <div class="cinema-stage">
+    <div class="cinema-art" aria-hidden="true">
+      <div class="cinema-grid"></div>
+      <div class="cinema-orbit"></div>
+      <div class="cinema-models">
+        <div class="model-css chip-css">
+          <div class="chip-stack"><i></i><i></i><i></i><i><b>TS</b><small>TECHSTOCK</small></i></div>
+        </div>
+        <div class="model-css fan-css">
+          <div class="fan-stack">
+            <div class="fan-support"></div>
+            <div class="fan-rotor">{% for blade in range(7) %}<i style="--blade:{{ blade }}"></i>{% endfor %}</div>
+            <div class="fan-hub"></div>
+            <div class="fan-frame"></div>
+          </div>
+        </div>
+        <div class="model-css board-css">
+          <div class="board-plate"><i class="board-socket"></i><i class="board-ram"></i><i class="board-sink"></i><i class="board-ports"></i><i class="board-pcie"></i></div>
+        </div>
+      </div>
+      <div class="cinema-webgl"></div>
+      <div class="cinema-crystal crystal-left"></div>
+      <div class="cinema-crystal crystal-right"></div>
+    </div>
+
+    <section class="cinema-scene scene-chip" aria-labelledby="title-chip">
+      <p class="cinema-eyebrow">Inventário tecnológico</p>
+      <h1 id="title-chip"><span>TECH</span><span>STOCK</span></h1>
+      <p class="scene-lead">Gestão de ativos, da prateleira ao caixa.</p>
+    </section>
+    <section class="cinema-scene scene-fan" aria-labelledby="title-fan">
+      <h2 id="title-fan" lang="en">ENGINEERED<br>FOR PERFORMANCE.</h2>
+    </section>
+    <section class="cinema-scene scene-exploded" aria-labelledby="title-exploded">
+      <h2 class="cinema-eyebrow" id="title-exploded">Vista explodida</h2>
+      <ul class="fan-labels">
+        <li data-part="rotor"><strong>AGILIDADE</strong><small>Hélice</small><i aria-hidden="true"></i></li>
+        <li data-part="frame"><strong>QUALIDADE</strong><small>Moldura</small><i aria-hidden="true"></i></li>
+        <li data-part="support"><strong>DURABILIDADE</strong><small>Suporte</small><i aria-hidden="true"></i></li>
+      </ul>
+    </section>
+    <section class="cinema-scene scene-board" aria-labelledby="title-board">
+      <h2 id="title-board"><span><b>E CLARO,</b></span><span><b>PROTEÇÃO.</b></span></h2>
+      <p class="scene-lead">Visibilidade e organização para cuidar dos seus ativos.</p>
+    </section>
+    <section class="cinema-scene scene-system" aria-labelledby="title-system">
+      <h2 id="title-system"><span>TECNOLOGIA ORGANIZADA.</span><span>INFORMAÇÃO SOB CONTROLE.</span><span>GESTÃO INTELIGENTE.</span></h2>
+      <ul class="system-modules">
+        <li><span aria-hidden="true">⊞</span> Produtos</li>
+        <li><span aria-hidden="true">▤</span> Categorias</li>
+        <li><span aria-hidden="true">◇</span> Fornecedores</li>
+        <li><span aria-hidden="true">⇄</span> Movimentações</li>
+      </ul>
+    </section>
+
+    <div class="cinema-track" aria-hidden="true">
+      <span>↓ Role para explorar</span><i></i><span class="cinema-chapter">01 / 06</span>
+    </div>
+  </div>
+  <section class="cinema-entry" aria-labelledby="title-entry">
+    <div class="entry-inner">
+      <h2 id="title-entry">TECHSTOCK <span>MANAGER</span></h2>
+      <p>Seu estoque. Sua tecnologia. Seu controle.</p>
+      <a class="cinema-link entry-link" href="{{ url_for('login') }}">ENTRAR <span aria-hidden="true">↗</span></a>
+    </div>
+  </section>
+</main>
+</body>
+</html>

@@ -1,15 +1,42 @@
 {% extends "base.html" %}
 {% block title %}Dashboard | TechStock{% endblock %}
+{% block page_assets %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/control-center.css') }}">
+  <script src="{{ url_for('static', filename='js/control-center.js') }}" defer></script>
+{% endblock %}
 {% block content %}
-<div class="page-heading"><div><span class="eyebrow">VISÃO GERAL</span><h1>Dashboard</h1><p>Acompanhe os ativos e a situação do inventário.</p></div>{% if usuario.perfil_acesso == 'GERENTE' %}<a class="button primary" href="{{ url_for('novo_produto') }}">＋ Cadastrar produto</a>{% endif %}</div>
-<div class="stats">
-  <div class="stat-card"><span>Produtos ativos</span><strong>{{ total }}</strong><small>Itens no catálogo</small></div>
-  <div class="stat-card"><span>Unidades em estoque</span><strong>{{ total_units }}</strong><small>Saldo total registrado</small></div>
-  <div class="stat-card warning-stat"><span>Precisam de reposição</span><strong>{{ low_stock }}</strong><small>Estoque no mínimo ou abaixo</small></div>
+<div class="page-heading control-heading">
+  <div><span class="eyebrow">TECHSTOCK CONTROL CENTER</span><h1>Dashboard de inventário</h1><p>Acompanhe o catálogo, o saldo físico e os itens que precisam de reposição.</p></div>
+  {% if usuario.perfil_acesso == 'GERENTE' %}<a class="button primary" href="{{ url_for('novo_produto') }}">＋ Cadastrar produto</a>{% endif %}
 </div>
+
+<section class="control-grid" aria-label="Indicadores de inventário">
+  <article class="control-stock">
+    <p class="control-label">Unidades em estoque</p>
+    <strong class="control-value"><span class="sr-only">{{ total_units }}</span><span data-count="{{ total_units }}" aria-hidden="true">{{ total_units }}</span></strong>
+    <p>Saldo total registrado</p>
+    <div class="stock-pattern" aria-hidden="true"></div>
+  </article>
+  <article class="control-active">
+    <p class="control-label">Produtos ativos</p>
+    <strong class="control-value"><span class="sr-only">{{ total }}</span><span data-count="{{ total }}" aria-hidden="true">{{ total }}</span></strong>
+    <p>Itens disponíveis no catálogo</p>
+  </article>
+  <article class="control-stock-health">
+    <div>
+      <p class="control-label">Precisam de reposição</p>
+      <strong class="control-value"><span class="sr-only">{{ low_stock }}</span><span data-count="{{ low_stock }}" aria-hidden="true">{{ low_stock }}</span></strong>
+      <p>Estoque no mínimo ou abaixo</p>
+    </div>
+    {% if total %}
+      <span class="supply-ring" style="--share:{{ (low_stock / total) * 100 }}%" aria-hidden="true"><span>{{ (low_stock / total * 100)|round|int }}%</span></span>
+      <meter class="sr-only" min="0" max="{{ total }}" value="{{ low_stock }}" aria-label="Proporção de produtos que precisam de reposição">{{ low_stock }} de {{ total }}</meter>
+    {% endif %}
+  </article>
+</section>
 <div class="section-heading"><div><h2>Inventário de produtos</h2><p>Dados consolidados de produtos, categorias e fornecedores.</p></div><span class="count">{{ products|length }} registros</span></div>
-<div class="catalog-tools"><label><span class="sr-only">Buscar no invent?rio</span><input id="catalog-search" type="search" placeholder="Buscar por produto, SKU ou categoria?" aria-label="Buscar no invent?rio"></label><span id="catalog-count" aria-live="polite">{{ products|length }} produtos no cat?logo</span></div>
-<div class="table-wrap"><table id="catalog-table"><thead><tr><th>SKU / ATIVO</th><th>FABRICANTE</th><th>CATEGORIA</th><th>FORNECEDOR</th><th>PREÇO</th><th>ESTOQUE</th><th>LOCALIZAÇÃO / LICENÇA</th><th>STATUS</th><th></th></tr></thead><tbody>
+<div class="catalog-tools"><label><span class="sr-only">Buscar no inventário</span><input id="catalog-search" type="search" placeholder="Buscar por produto, SKU ou categoria…" aria-label="Buscar no inventário"></label><span id="catalog-count" aria-live="polite">{{ products|length }} produtos no catálogo</span></div>
+<div class="table-wrap" role="region" aria-label="Inventário de produtos" tabindex="0"><table id="catalog-table"><thead><tr><th>SKU / ATIVO</th><th>FABRICANTE</th><th>CATEGORIA</th><th>FORNECEDOR</th><th>PREÇO</th><th>ESTOQUE</th><th>LOCALIZAÇÃO / LICENÇA</th><th>STATUS</th><th></th></tr></thead><tbody>
 {% for p in products %}
 <tr class="{% if p.estoque_atual <= p.estoque_minimo %}low-row{% endif %}">
 <td><strong>{{ p.sku }}</strong><small>{{ p.nome }}</small></td><td>{{ p.fabricante }}</td><td>{{ p.categoria }}</td><td>{{ p.fornecedor }}</td><td>R$ {{ "%.2f"|format(p.preco_venda) }}{% if usuario.perfil_acesso == 'GERENTE' %}<form method="post" action="{{ url_for('alterar_preco', produto_id=p.id_produto) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="number" name="preco_venda" min="0.01" max="99999999.99" step="0.01" value="{{ p.preco_venda }}" aria-label="Novo preço de {{ p.nome }}" required><button class="text-button">Atualizar preço</button></form>{% endif %}</td>

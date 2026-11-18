@@ -66,6 +66,25 @@ class SQLiteIntegrationTest(unittest.TestCase):
         self.assertEqual(self.client().get('/cadastros').status_code,403)
         self.assertEqual(self.client(manager=True).get('/cadastros').status_code,200)
 
+    def test_public_landing_authenticated_dashboard_and_logout(self):
+        visitor = app.test_client()
+        with patch('app.get_connection') as connect:
+            response = visitor.get('/')
+            connect.assert_not_called()
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'class="cinema"', response.data)
+        self.assertIn(b'href="/login"', response.data)
+        self.assertNotIn(b'id="catalog-table"', response.data)
+        self.assertEqual(visitor.get('/pdv').location, '/login')
+
+        client = self.client(manager=True)
+        response = client.get('/')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'id="catalog-table"', response.data)
+        self.assertNotIn(b'class="cinema"', response.data)
+        self.assertEqual(client.post('/logout', data={'csrf_token': 'token'}).location, '/login')
+        self.assertIn(b'class="cinema"', client.get('/').data)
+
     def test_multi_item_checkout_receipt_and_stock(self):
         before = self.query('SELECT estoque_atual FROM Produtos ORDER BY id_produto')
         client = self.client()

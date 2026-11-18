@@ -1,0 +1,25 @@
+ app.py                                             |   4 [32m+[m[31m-[m
+ static/css/control-center.css                      | 100 [32m+++++++[m
+ static/css/intro.css                               | 323 [32m+++++++++++++++++++++[m
+ static/css/style.css                               |   2 [31m-[m
+ static/css/techstock.css                           | 175 [32m+++++++++++[m
+ static/favicon.png                                 | Bin [31m0[m -> [32m348[m bytes
+ static/js/control-center.js                        |  19 [32m++[m
+ static/js/hardware.js                              | 209 [32m+++++++++++++[m
+ static/js/interface.js                             |  10 [32m+[m
+ static/js/intro.js                                 | 173 [32m+++++++++++[m
+ static/js/landing-pointer.js                       |  51 [32m++++[m
+ static/js/landing-scene.js                         | 167 [32m+++++++++++[m
+ static/vendor/ScrollTrigger.min.js                 |  11 [32m+[m
+ static/vendor/THREE-LICENSE.txt                    |  21 [32m++[m
+ static/vendor/gsap.min.js                          |  11 [32m+[m
+ static/vendor/inter-LICENSE.txt                    |  93 [32m++++++[m
+ static/vendor/inter-latin-wght-normal.woff2        | Bin [31m0[m -> [32m48444[m bytes
+ static/vendor/space-grotesk-LICENSE.txt            |  93 [32m++++++[m
+ .../vendor/space-grotesk-latin-wght-normal.woff2   | Bin [31m0[m -> [32m22284[m bytes
+ static/vendor/three.module.min.js                  |   6 [32m+[m
+ templates/base.html                                |  65 [32m++++[m[31m-[m
+ templates/dashboard.html                           |  41 [32m++[m[31m-[m
+ templates/landing.html                             |  90 [32m++++++[m
+ tests/test_sqlite_integration.py                   |  19 [32m++[m
+ 24 files changed, 1667 insertions(+), 16 deletions(-)

@@ -1,6 +1,59 @@
-<!doctype html><html lang="pt-br"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{% block title %}TechStock Manager{% endblock %}</title><link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_version) }}"></head><body class="{% if request.endpoint == 'login' %}auth-page{% endif %}">
-<aside class="sidebar"><a class="brand" href="{{ url_for('dashboard') }}"><span class="brand-icon">TS</span><span>TechStock<small>MANAGER</small></span></a>
-{% if usuario %}<a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" {% if request.endpoint == 'dashboard' %}aria-current="page"{% endif %} href="{{ url_for('dashboard') }}">Catálogo</a><a class="nav-link {% if request.endpoint == 'pdv' %}active{% endif %}" {% if request.endpoint == 'pdv' %}aria-current="page"{% endif %} href="{{ url_for('pdv') }}">Frente de caixa</a><a class="nav-link {% if request.endpoint == 'vendas' %}active{% endif %}" {% if request.endpoint == 'vendas' %}aria-current="page"{% endif %} href="{{ url_for('vendas') }}">Vendas</a>
-{% if usuario.perfil_acesso == 'GERENTE' %}<a class="nav-link {% if request.endpoint == 'novo_produto' %}active{% endif %}" {% if request.endpoint == 'novo_produto' %}aria-current="page"{% endif %} href="{{ url_for('novo_produto') }}">Novo produto</a><a class="nav-link {% if request.endpoint == 'movimentacoes' %}active{% endif %}" {% if request.endpoint == 'movimentacoes' %}aria-current="page"{% endif %} href="{{ url_for('movimentacoes') }}">Movimentações</a><a class="nav-link {% if request.endpoint == 'cadastros' %}active{% endif %}" {% if request.endpoint == 'cadastros' %}aria-current="page"{% endif %} href="{{ url_for('cadastros') }}">Cadastros</a>{% endif %}{% endif %}</aside>
-<main class="main"><header class="topbar"><div><span class="eyebrow">TECHSTORE INFORMÁTICA</span><strong>Painel de operações</strong></div>{% if usuario %}<span class="user-chip">{{ usuario.nome_completo }} · {{ usuario.perfil_acesso }}</span><form method="post" action="{{ url_for('logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="text-button">Sair</button></form>{% endif %}</header><section class="content">
-{% for category, message in get_flashed_messages(with_categories=true) %}<div class="alert {{ category }}" role="alert">{{ message }}</div>{% endfor %}{% block content %}{% endblock %}</section></main></body></html>
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}TechStock Manager{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_version) }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/techstock.css') }}">
+  {% block page_assets %}{% endblock %}
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+  <script src="{{ url_for('static', filename='js/interface.js') }}" defer></script>
+</head>
+<body class="{% if request.endpoint == 'login' %}auth-page{% endif %}">
+
+{% macro nav_item(endpoint, icon, label) -%}
+  {% set active = request.endpoint == endpoint %}
+  <a class="nav-link{% if active %} active{% endif %}" {% if active %}aria-current="page"{% endif %} href="{{ url_for(endpoint) }}">
+    <span aria-hidden="true">{{ icon }}</span>{{ label }}
+  </a>
+{%- endmacro %}
+
+<div {% if usuario %}class="app-shell"{% endif %}>
+  <aside class="sidebar">
+    <a class="brand" href="{{ url_for('dashboard') }}"><span class="brand-icon" aria-hidden="true">TS</span><span>TechStock<small>MANAGER</small></span></a>
+    {% if usuario %}
+      <div class="navigation-caption">Central de operações</div>
+      <nav aria-label="Navegação principal">
+        {{ nav_item('dashboard', '⊞', 'Catálogo') }}
+        {{ nav_item('pdv', '▤', 'Frente de caixa') }}
+        {{ nav_item('vendas', '◫', 'Vendas') }}
+        {% if usuario.perfil_acesso == 'GERENTE' %}
+          {{ nav_item('novo_produto', '⊕', 'Novo produto') }}
+          {{ nav_item('movimentacoes', '⇄', 'Movimentações') }}
+          {{ nav_item('cadastros', '◇', 'Cadastros') }}
+        {% endif %}
+      </nav>
+    {% endif %}
+  </aside>
+  <main class="main" id="painel" tabindex="-1">
+    <header class="topbar">
+      <div><span class="eyebrow">TECHSTORE INFORMÁTICA</span><strong>Painel de operações</strong></div>
+      {% if usuario %}
+        <span class="user-chip">{{ usuario.nome_completo }} · {{ usuario.perfil_acesso }}</span>
+        <form method="post" action="{{ url_for('logout') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="text-button">Sair</button>
+        </form>
+      {% endif %}
+    </header>
+    <section class="content">
+      {% for category, message in get_flashed_messages(with_categories=true) %}
+        <div class="alert {{ category }}" role="alert">{{ message }}</div>
+      {% endfor %}
+      {% block content %}{% endblock %}
+    </section>
+  </main>
+</div>
+</body>
+</html>

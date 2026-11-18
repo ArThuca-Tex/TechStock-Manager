@@ -42,7 +42,7 @@ def proteger_rotas():
             g.usuario = users[0] if users else None
         finally:
             conn.close()
-    if request.endpoint == 'login':
+    if request.endpoint in {'login', 'dashboard'}:
         return
     if not g.usuario:
         return redirect(url_for('login'))
@@ -89,6 +89,8 @@ def rows_to_dicts(cursor):
 
 @app.route("/")
 def dashboard():
+    if not g.usuario:
+        return render_template('landing.html')
     conn = get_connection()
     try:
         cur = conn.cursor()
