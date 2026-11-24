@@ -5,7 +5,7 @@ import { createOceanParticles } from './ocean-particles.js';
 
 export function createOcean(quality) {
   const group = new THREE.Group();
-  const jelly = createJellyfish(quality.compact, bellGeometry(20 * quality.detail, 40 * quality.detail));
+  const jelly = createJellyfish(quality, bellGeometry(20 * quality.detail, 40 * quality.detail));
   const school = createSwarm(quality.swarm);
   const particles = createOceanParticles(quality.compact);
   const debris = new THREE.Group();
@@ -22,7 +22,7 @@ export function createOcean(quality) {
       terminal.position.x = x;
       chip.add(terminal);
     }
-    chip.scale.setScalar(.5 + (index % 5) * .19);
+    chip.scale.setScalar(.18 + (index % 5) * .07);
     debris.add(chip);
     return chip;
   });
@@ -31,21 +31,21 @@ export function createOcean(quality) {
   return {
     group,
     update(time, state, pointer, compact) {
-      const { water, sink, rise, spread } = state;
+      const { water, rise, spread } = state;
       group.visible = water > .005;
       if (!group.visible) return;
       particles.update(time, water, rise, spread);
       school.update(time, rise, spread, water, pointer, compact);
       jelly.body.visible = false;
-      if (water > .77 && rise > .015 && rise < .995) jelly.update(time, rise, water, pointer);
-      debris.visible = sink > .01 && sink < .98;
+      if (rise > 0) jelly.update(time, rise, pointer, compact);
+      debris.visible = rise > 0;
       if (!debris.visible) return;
       parts.forEach((part, index) => {
         const angle = index * 2.399963;
-        const y = 2.8 + Math.sin(angle) * 2.6 - sink * (7.1 + (index % 5) * .78);
-        const x = Math.cos(angle) * (compact ? 2.2 : 4.1) + Math.sin(sink * 5 + time * .35 + angle) * .45;
-        part.position.set(x, y, -1 - (index % 7) * .67 - sink * 2);
-        part.rotation.set(angle + sink * 1.23, sink * (1 + index * .11), .35 * Math.sin(angle + time * .4));
+        const y = 5.5 - ((time * (.23 + index % 5 * .025) + index * 1.71) % 11);
+        const x = Math.cos(angle) * (compact ? 2.2 : 4.1) + Math.sin(rise * 5 + time * .35 + angle) * .45;
+        part.position.set(x, y, -4 - (index % 7) * .67 - rise * 2);
+        part.rotation.set(angle + rise * 1.23, rise * (1 + index * .11), .35 * Math.sin(angle + time * .4));
       });
     },
   };

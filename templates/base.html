@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_version) }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/techstock.css') }}">
   {% block page_assets %}{% endblock %}
-  <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='image/logos/Logótipo de Medusa Branca em Vetor.png') }}">
   <script src="{{ url_for('static', filename='js/interface.js') }}" defer></script>
 </head>
 <body class="{% if request.endpoint == 'login' %}auth-page{% endif %}">
@@ -21,7 +21,7 @@
 
 <div {% if usuario %}class="app-shell"{% endif %}>
   <aside class="sidebar">
-    <a class="brand" href="{{ url_for('dashboard') }}"><span class="brand-icon" aria-hidden="true">TS</span><span>TechStock<small>MANAGER</small></span></a>
+    <a class="brand" href="{{ url_for('dashboard') }}"><img class="app-brand-image" src="{{ url_for('static', filename='image/logos/Logótipo TechStock Manager em Branco.png') }}" alt="TechStock Manager"></a>
     {% if usuario %}
       <div class="navigation-caption">Central de operações</div>
       <nav aria-label="Navegação principal">

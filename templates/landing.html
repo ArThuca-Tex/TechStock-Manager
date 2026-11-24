@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="TechStock Manager, gestão de inventário tecnológico.">
   <title>TechStock Manager | Inventário tecnológico</title>
-  <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" type="image/png">
+  <link rel="icon" href="{{ url_for('static', filename='image/logos/Logótipo de Medusa Branca em Vetor.png') }}" type="image/png">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/intro.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/ocean.css') }}">
   <script src="{{ url_for('static', filename='vendor/gsap.min.js') }}" defer></script>
@@ -16,9 +16,9 @@
 <main class="cinema">
   <header class="cinema-header">
     <a class="cinema-brand" href="{{ url_for('dashboard') }}" aria-label="TechStock Manager, início">
-      <span class="cinema-mark" aria-hidden="true">TS</span> TechStock <small>MANAGER</small>
+      <img class="cinema-brand-image" src="{{ url_for('static', filename='image/logos/Logótipo TechStock Manager em Branco.png') }}" alt="TechStock Manager">
     </a>
-    <a class="cinema-link" href="{{ url_for('login') }}">ENTRAR <span aria-hidden="true">↗</span></a>
+    <a class="cinema-link" href="{{ url_for('login') }}">Acesso direto <span aria-hidden="true">↗</span></a>
   </header>
   <div class="cinema-stage">
     <div class="cinema-art" aria-hidden="true">
@@ -59,13 +59,13 @@
       <p class="scene-lead">Gestão de ativos, da prateleira ao caixa.</p>
     </section>
     <section class="cinema-scene scene-fan" aria-labelledby="title-fan">
-      <h2 id="title-fan" lang="en">ENGINEERED<br>FOR PERFORMANCE.</h2>
+      <h2 id="title-fan">PROJETADO PARA<br>DISSIPAR CALOR.</h2>
     </section>
     <section class="cinema-scene scene-exploded" aria-labelledby="title-exploded">
       <h2 class="cinema-eyebrow" id="title-exploded">Vista explodida</h2>
       <ul class="fan-labels">
-        <li data-part="frame"><strong>QUALIDADE</strong><small>Moldura</small><i aria-hidden="true"></i></li>
-        <li data-part="rotor"><strong>AGILIDADE</strong><small>Hélice</small><i aria-hidden="true"></i></li>
+        <li data-part="rotor"><strong>AGILIDADE</strong><small>Ventoinha</small><i aria-hidden="true"></i></li>
+        <li data-part="tower"><strong>QUALIDADE</strong><small>Aletas de alumínio</small><i aria-hidden="true"></i></li>
         <li data-part="support"><strong>DURABILIDADE</strong><small>Suporte</small><i aria-hidden="true"></i></li>
       </ul>
     </section>
@@ -74,10 +74,15 @@
       <p class="scene-lead">Visibilidade e organização para cuidar dos seus ativos.</p>
     </section>
     <p class="cinema-scroll" aria-hidden="true">↓ Role para explorar</p>
+    <div class="ocean-captions">
+      <p class="ocean-caption">A tecnologia está em constante movimento.</p>
+      <p class="ocean-caption">Organização que flui.</p>
+      <p class="ocean-caption">Controle em cada detalhe.</p>
+    </div>
     <section class="cinema-entry" aria-labelledby="title-entry">
       <div class="entry-inner">
         <div class="entry-copy">
-          <h2 id="title-entry">TECHSTOCK <span>MANAGER</span></h2>
+          <h2 id="title-entry"><img class="entry-brand-image" src="{{ url_for('static', filename='image/logos/Logótipo TechStock Manager em Branco.png') }}" alt="TechStock Manager"></h2>
           <p>Seu estoque. Sua tecnologia. Seu controle.</p>
         </div>
         <a class="cinema-link entry-link" href="{{ url_for('login') }}">ENTRAR <span aria-hidden="true">↗</span></a>

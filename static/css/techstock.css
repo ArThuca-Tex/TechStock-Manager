@@ -173,3 +173,6 @@
   .app-shell { display: block; }
   .main { min-height: 0; }
 }
+
+.app-brand-image { display: block; width: min(162px, 100%); height: auto; }
+.login-brand-image { display: block; width: 158px; max-width: 100%; height: auto; margin-bottom: 20px; }

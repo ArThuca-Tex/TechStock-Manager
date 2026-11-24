@@ -160,3 +160,34 @@
   .fan-stack { transform: translate(0, calc(-11vh + var(--explode, 0) * 4vh))
     rotateX(calc(-17deg - var(--explode, 0) * 61deg)); }
 }
+
+.cinema-brand-image { display: block; width: clamp(110px, 15vw, 175px); height: auto; }
+.entry-brand-image { width: min(65vw, 310px); height: auto; }
+.is-animated .entry-inner { display: grid; justify-items: center; }
+.is-animated .entry-copy { position: absolute; top: 50%; margin-top: clamp(58px, 10vh, 105px); }
+.is-animated .entry-link { margin-top: 0; }
+.ocean-captions { display: none; }
+.is-animated .ocean-captions {
+  display: block; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+}
+.ocean-caption {
+  position: absolute; top: 20%; left: var(--edge); width: min(26rem, 65vw);
+  margin: 0; opacity: 0; visibility: hidden; color: var(--ice);
+  font: 600 clamp(1.7rem, 4.1vw, 4.4rem)/1.02 var(--heading);
+  text-transform: uppercase; text-wrap: balance; letter-spacing: -.05em;
+  text-shadow: 0 2px 22px #040b20;
+}
+@media (max-width: 760px) {
+  .ocean-caption { top: 15%; }
+  .cinema.is-animated .scene-exploded { padding-top: 42vh; }
+}
+.cinema.is-animated .cinema-stage:not([data-login-ready]) .cinema-entry { display: none; }
+
+.cinema-header > .cinema-link {
+  min-height: 44px;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  color: #d1decf;
+}
+.cinema-header > .cinema-link:hover { color: white; text-decoration: underline; }

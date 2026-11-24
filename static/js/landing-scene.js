@@ -1,5 +1,6 @@
+import { underwaterCue } from './landing-timeline.js';
 import * as THREE from '../vendor/three.module.min.js';
-import { createChip, createFan, createMotherboard } from './hardware.js';
+import { createChip, createCooler, createMotherboard } from './hardware.js';
 import { createOcean } from './ocean-scene.js';
 import { landingQuality } from './landing-quality.js';
 
@@ -41,47 +42,60 @@ export function mountScene(host, state, onContextLost) {
   renderer.setPixelRatio(quality.pixelRatio);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.17;
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.transmissionResolutionScale = quality.antialias ? .65 : .4;
   host.append(canvas);
 
   const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x111b34, 0);
   const environment = makeEnvironment(renderer);
   scene.environment = environment.texture;
   scene.environmentIntensity = .76;
   const ocean = createOcean(quality);
   scene.add(ocean.group);
   const camera = new THREE.PerspectiveCamera(34, 1, .1, 60);
-  const key = new THREE.DirectionalLight(0xd5e8ff, 3.6);
-  const edge = new THREE.DirectionalLight(0x258cff, 3.5);
-  const fill = new THREE.DirectionalLight(0x7086ae, 1.5);
+  const key = new THREE.DirectionalLight(0xfff2dd, 3.6);
+  const edge = new THREE.DirectionalLight(0xaecafa, 3.5);
+  const fill = new THREE.DirectionalLight(0xc9d5e8, 1.15);
   fill.position.set(2, -3, -2);
-  scene.add(new THREE.HemisphereLight(0xeaf5ff, 0x33445d, 2), key, edge, fill);
+  scene.add(new THREE.HemisphereLight(0xeaf5ff, 0x33445d, .85), key, edge, fill);
 
   const chip = createChip();
-  const fan = createFan();
+  const fan = createCooler();
   const board = createMotherboard();
+  chip.name = 'cpu';
+  fan.model.name = 'cooler';
+  board.name = 'motherboard';
   scene.add(chip, fan.model, board);
 
   const glass = new THREE.MeshPhysicalMaterial({
     color: 0x77beed, metalness: .24, roughness: .22, clearcoat: .78,
-    transparent: true, opacity: .33, depthWrite: false, flatShading: true,
+    transmission: quality.compact ? 0 : .86, thickness: .32, ior: 1.46,
   });
-  const crystals = [
-    new THREE.Mesh(new THREE.IcosahedronGeometry(.29, 0), glass),
-    new THREE.Mesh(new THREE.OctahedronGeometry(.26), glass),
-    new THREE.Mesh(new THREE.DodecahedronGeometry(.15, 0), glass),
-  ];
-  const facets = crystals.map((object) => {
-    const outline = new THREE.LineSegments(
-      new THREE.EdgesGeometry(object.geometry, 24),
-      new THREE.LineBasicMaterial({ color: 0x9fd8ef, transparent: true, opacity: .21, depthWrite: false }),
-    );
-    object.add(outline);
-    return outline;
+  const crystals = [1, .8, .58].map((size) => {
+    const geometry = new THREE.SphereGeometry(.30 * size, 28, 18);
+    const vertices = geometry.attributes.position;
+    for (let i = 0; i < vertices.count; i++) {
+      const x = vertices.getX(i), y = vertices.getY(i), z = vertices.getZ(i);
+      vertices.setXYZ(i, x * (1 + y), y + x * z * 2, z * (1 - x));
+    }
+    geometry.computeVertexNormals();
+    return new THREE.Mesh(geometry, glass);
   });
   crystals[0].scale.set(1, 1.6, .62);
   crystals[1].scale.set(1, 1, 1.65);
   scene.add(...crystals);
 
+  // Bounding spheres derived from the assembled meshes enclose all rotated vertices.
+  const fallingModels = { motherboard: board, cooler: fan.model, cpu: chip };
+  const fallingRadii = Object.fromEntries(Object.entries(fallingModels).map(([name, object]) => {
+    const bounds = new THREE.Box3().setFromObject(object);
+    return [name, new THREE.Vector3(
+      Math.max(Math.abs(bounds.min.x), Math.abs(bounds.max.x)),
+      Math.max(Math.abs(bounds.min.y), Math.abs(bounds.max.y)),
+      Math.max(Math.abs(bounds.min.z), Math.abs(bounds.max.z)),
+    ).length()];
+  }));
   const pointer = new THREE.Vector2();
   const steering = new THREE.Vector2();
   const projected = new THREE.Vector3();
@@ -95,7 +109,7 @@ export function mountScene(host, state, onContextLost) {
 
   function render(now = 0) {
     if (lost || !width || !height) return false;
-    const { chipSize, chipTurn, fanSize, fanTurn, rotor, split, boardSize, boardTurn, cameraMove, phase, ambient, water, sink, rise } = state;
+    const { chipSize, chipTurn, fanSize, fanTurn, rotor, split, boardSize, boardTurn, cameraMove, phase, ambient, water, rise } = state;
     const compact = width < 760;
     const horizontal = Math.min(1, width / 1040);
     const time = now / 1000;
@@ -114,41 +128,44 @@ export function mountScene(host, state, onContextLost) {
     edge.intensity = 2 + split * .82 + water * 1.3;
     key.intensity = 3.4 - water * 1.7;
     scene.environmentIntensity = .76 - water * .39;
+    scene.fog.density = water * .034;
 
-    const falling = sink > .001 && sink < .998;
-    const sinkArc = Math.pow(Math.max(0, Math.sin(sink * Math.PI)), .68);
-    chip.visible = chipSize > .012 || falling;
-    chip.position.set((compact ? .05 : .83 * horizontal) + chipTurn * .63, compact ? -.49 : -.58, -.33 - chipTurn * .15);
-    chip.rotation.set(-.49 + .1 * chipTurn, -.27 + .48 * chipTurn, -.37 + .6 * chipTurn + ambient * .025);
-    chip.scale.setScalar(chipSize * (compact ? .76 : 1));
-    if (falling) {
-      chip.position.set((compact ? -1.05 : -2.35) + Math.sin(sink * 5 + time * .55) * .47, 3.9 - sink * 9.4, -1.3 - sink * 4.7);
-      chip.rotation.set(-.65 + sink * 2, -.33 + sink * .8, -.4 + sink * 1.4);
-      chip.scale.setScalar(sinkArc * .66);
-    }
+    const studio = phase < .33;
+    chip.visible = studio && chipSize > .012;
+    chip.position.set(compact ? .08 : .95 * horizontal, compact ? -.48 : -.35, 0);
+    chip.rotation.set(-.35 + .21 * Math.sin(time * .59), -.32 + time * .29 + chipTurn, -.29 + ambient * .14);
+    chip.position.y += Math.sin(time * 1.1) * .095;
+    chip.scale.setScalar(chipSize * (compact ? .78 : 1));
 
-    fan.model.visible = fanSize > .012 || falling;
-    fan.model.position.set(compact ? .0 : split * .68 * horizontal, compact ? .52 - split * .25 : -.05, -.17);
-    fan.model.rotation.set(THREE.MathUtils.lerp(-.19 + fanTurn * .13, -1.39, split), -.24 * (1 - split), -.09 * (1 - split));
-    fan.model.scale.setScalar(fanSize * (compact ? .65 : 1) * (1 - split * .13));
-    // All five parts move along the same local axis. Tilting the assembly exposes that axis vertically.
-    const spacing = falling ? 0 : split;
-    fan.support.position.z = -.27 - 1.66 * spacing;
-    fan.hub.position.z = -.15 - .88 * spacing;
-    fan.rotor.position.z = .018 - .07 * spacing;
-    fan.frame.position.z = .15 + .77 * spacing;
-    fan.fasteners.position.z = .348 + 1.55 * spacing;
+    fan.model.visible = studio && fanSize > .012;
+    fan.model.position.set(compact ? .25 : .9 * horizontal, compact ? .33 : 0, 0);
+    fan.model.rotation.set(-.16 + split * .06, -.58 + fanTurn * .27 - split * .14, -.11 * (1 - split));
+    fan.model.scale.setScalar(fanSize * (compact ? .72 : 1) * (1 - split * .24));
+    fan.explode(split);
     fan.rotor.rotation.z = rotor + state.spin;
-    if (falling) {
-      fan.model.position.set((compact ? .92 : 2.17) + Math.sin(sink * 6 + .8) * .58, 4.45 - sink * 9.7, -2.3 - sink * 4.5);
-      fan.model.rotation.set(-.5 + sink * 1.9, -.35 + sink * 1.16, sink * -.75);
-      fan.model.scale.setScalar(sinkArc * .59);
-    }
 
-    board.visible = boardSize > .012;
-    board.position.set(compact ? .36 : 1.63 * horizontal, -.45 + boardTurn * .25 - sink * 7.4, -boardTurn * .6 - sink * 3.7);
-    board.rotation.set(-.4 + boardTurn * .27, .19 - boardTurn * .5, -.18 + boardTurn * .2);
-    board.scale.setScalar(boardSize * (compact ? .63 : 1));
+    board.visible = studio && boardSize > .012;
+    board.position.set(compact ? .17 : 1.35 * horizontal, compact ? .16 : -.28, 0);
+    board.rotation.set(-.41 + boardTurn * .55, .27 - boardTurn * .58, -.25 + boardTurn * .19);
+    board.scale.setScalar(boardSize * (compact ? .75 : 1));
+
+    const { hardware, descent } = underwaterCue(phase);
+    if (hardware) {
+      camera.updateMatrixWorld();
+      const object = fallingModels[hardware];
+      const depth = fit + (hardware === 'motherboard' ? -1.45 : hardware === 'cooler' ? 3.55 : .65);
+      const halfHeight = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+      const scale = hardware === 'cpu' ? (compact ? .42 : .54) : hardware === 'cooler' ? .82 : .79;
+      const radius = fallingRadii[hardware] * scale;
+      const edge = (depth + radius) * halfHeight + radius + .12;
+      const halfWidth = depth * halfHeight * camera.aspect;
+      const x = halfWidth * (hardware === 'cpu' ? -.73 : hardware === 'cooler' ? .18 : -.05);
+      object.visible = true;
+      object.scale.setScalar(scale);
+      object.position.set(x + Math.sin(descent * Math.PI * 2) * halfWidth * .08,
+        edge * (1 - 2 * descent), -depth).applyMatrix4(camera.matrixWorld);
+      object.rotation.set(-.36 + descent * .9, -.4 + descent * 1.18, -.22 + descent * .61);
+    }
 
     let moving = false;
     crystals.forEach((object, index) => {
@@ -173,10 +190,9 @@ export function mountScene(host, state, onContextLost) {
       const breath = 1 - water;
       object.scale.set(breath, breath * (index === 0 ? 1.6 : 1), breath * (index === 0 ? .62 : index === 1 ? 1.65 : 1));
       object.rotation.set(phase * (.19 + .13 * index) + offset.y * 4, index + phase * .34, phase * side * .23 - offset.x * 4);
-      facets[index].material.opacity = .21 + Math.hypot(offset.x, offset.y) * 1.9;
     });
     renderer.render(scene, camera);
-    if (water > .11 && now - lastFrame > 30 && now - lastFrame < 175) slowFrames++;
+    if (now - lastFrame > 30 && now - lastFrame < 850) slowFrames++;
     else slowFrames = Math.max(0, slowFrames - 1);
     lastFrame = now;
     if (slowFrames > 36 && renderer.getPixelRatio() > quality.minPixelRatio) {
@@ -230,6 +246,7 @@ export function mountScene(host, state, onContextLost) {
       materials.forEach((material) => {
         material.map?.dispose();
         material.roughnessMap?.dispose();
+        material.bumpMap?.dispose();
         material.dispose();
       });
       environment.dispose();

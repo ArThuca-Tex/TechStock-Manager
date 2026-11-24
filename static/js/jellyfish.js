@@ -12,8 +12,10 @@ export function bellGeometry(rings, sides) {
   return new THREE.LatheGeometry(profile, sides);
 }
 
-export function createJellyfish(compact, geometry) {
+export function createJellyfish(quality, geometry) {
+  const { compact } = quality;
   const body = new THREE.Group();
+  body.name = 'jellyfish';
   const uniform = { clock: { value: 0 }, pulse: { value: 0 }, steer: { value: 0 } };
   const shell = new THREE.ShaderMaterial({
     uniforms: uniform, transparent: true, depthWrite: false, side: THREE.DoubleSide,
@@ -57,6 +59,14 @@ export function createJellyfish(compact, geometry) {
   const mantle = new THREE.Mesh(geometry, shell);
   mantle.renderOrder = 4;
   body.add(mantle);
+  const refractive = quality.antialias ? new THREE.Mesh(geometry, new THREE.MeshPhysicalMaterial({
+    color: 0xced8fa, transmission: .91, transparent: true, opacity: .45, depthWrite: false,
+    roughness: .19, thickness: .29, ior: 1.34, iridescence: .7, iridescenceIOR: 1.23,
+  })) : null;
+  if (refractive) {
+    refractive.renderOrder = 1;
+    body.add(refractive);
+  }
 
   const subumbrella = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
     color: 0x867bc3, transparent: true, opacity: .19, depthWrite: false, side: THREE.DoubleSide,
@@ -89,8 +99,9 @@ export function createJellyfish(compact, geometry) {
 
   return {
     body,
-    update(time, rise, water, pointer) {
+    update(time, rise, pointer, narrow) {
       const pulse = .5 - .5 * Math.cos(time * 2.1);
+      refractive?.scale.set(.97 - pulse * .15, .98 + pulse * .27, .97 - pulse * .15);
       uniform.clock.value = time;
       uniform.pulse.value = pulse;
       uniform.steer.value = pointer.x;
@@ -98,10 +109,11 @@ export function createJellyfish(compact, geometry) {
       subumbrella.scale.x = subumbrella.scale.z = .85 - pulse * .13;
       tentacles.update(time, pulse, pointer.x + Math.sin(rise * 6) * .4);
       body.position.set(Math.sin(rise * 4.5) * .47 + pointer.x * .23,
-        -4.55 + rise * 11.6 + Math.sin(time * 2.1) * .075, .46 - rise * .67);
+        -6 + THREE.MathUtils.smoothstep(rise, 0, .23) * 5.26 + rise * 2.2
+        + THREE.MathUtils.smoothstep(rise, .90, 1) * 10.5 + Math.sin(time * 2.1) * .075, .46 - rise * .67);
       body.rotation.set(-.11 + pointer.y * .11, time * .11, Math.sin(rise * 5) * .16 - pointer.x * .19);
-      body.visible = water > .77 && rise > .015 && rise < .995;
-      body.scale.setScalar(compact ? .89 : 1.21);
+      body.visible = rise > 0;
+      body.scale.setScalar(narrow ? 1.02 : 1.37);
     },
   };
 }

@@ -1,10 +1,10 @@
 import * as THREE from '../vendor/three.module.min.js';
 
 const metal = (color, roughness = .38) =>
-  new THREE.MeshStandardMaterial({ color, roughness, metalness: .58 });
+  new THREE.MeshStandardMaterial({ color, roughness, metalness: .87 });
 const polymer = (color) =>
-  new THREE.MeshStandardMaterial({ color, roughness: .68, metalness: .15 });
-const anodized = metal(0x657b89);
+  new THREE.MeshStandardMaterial({ color, roughness: .68, metalness: 0 });
+const anodized = metal(0x74797c);
 const steel = metal(0xa4a9ae);
 const graphite = polymer(0x20242b);
 const solder = metal(0xc8ac79);
@@ -62,8 +62,8 @@ function circularHole(outline, x, y, radius) {
 
 function brushedMetal() {
   const canvas = document.createElement('canvas');
-  canvas.width = 256;
-  canvas.height = 128;
+  canvas.width = 512;
+  canvas.height = 512;
   const ink = canvas.getContext('2d');
   for (let row = 0; row < canvas.height; row++) {
     const tone = 123 + Math.floor(19 * Math.sin(row * 153.3) + 12 * Math.cos(row * 26.4));
@@ -71,7 +71,8 @@ function brushedMetal() {
     ink.fillRect(0, row, canvas.width, 1);
   }
   const roughnessMap = new THREE.CanvasTexture(canvas);
-  const lid = metal(0xb7b8ba, .61);
+  roughnessMap.wrapS = roughnessMap.wrapT = THREE.RepeatWrapping;
+  const lid = new THREE.MeshPhysicalMaterial({ color: 0xb7b8ba, roughness: .66, metalness: .94, anisotropy: .57 });
   lid.roughnessMap = roughnessMap;
   lid.bumpMap = roughnessMap;
   lid.bumpScale = .0017;
@@ -137,7 +138,7 @@ function curvedBlade() {
   return geometry;
 }
 
-export function createFan() {
+function createFan() {
   const model = new THREE.Group();
   const frame = new THREE.Group();
   const support = new THREE.Group();
@@ -182,17 +183,118 @@ export function createFan() {
   return { model, frame, support, rotor, hub, fasteners };
 }
 
+export function createCooler() {
+  const model = new THREE.Group();
+  const tower = new THREE.Group();
+  const mount = new THREE.Group();
+  const fan = createFan();
+  const copper = metal(0xb97853, .34);
+  const rubber = polymer(0x262529);
+  const aluminium = metal(0xc0c1bd, .44);
+  const fin = blockOutline(2.58, 1.16, .16);
+  const finGeometry = new THREE.ExtrudeGeometry(fin, {
+    depth: .019, bevelEnabled: true, bevelSize: .009, bevelThickness: .007,
+    bevelSegments: 1, curveSegments: 4,
+  }).rotateX(Math.PI / 2);
+  repeated(tower, finGeometry, aluminium, Array.from({ length: 35 }, (_, i) => [0, -.89 + i * .062, -.41]));
+  mesh(tower, machined(fin, .043).rotateX(Math.PI / 2), graphite, 0, 1.29, -.41);
+  const pipe = (parent, points, radius, material) => mesh(parent, new THREE.TubeGeometry(
+    new THREE.CatmullRomCurve3(points.map((point) => new THREE.Vector3(...point)), false, 'centripetal'),
+    42, radius, 9), material);
+  for (let i = 0; i < 4; i++) {
+    const depth = -.79 + i * .23;
+    pipe(tower, [[-.92, 1.39, depth], [-.92, -.77, depth], [-.71, -1.24, depth],
+      [-.29, -1.44, depth], [.29, -1.44, depth], [.71, -1.24, depth],
+      [.92, -.77, depth], [.92, 1.39, depth]], .063, copper);
+  }
+  mesh(mount, machined(blockOutline(1.34, 1.0, .12), .12).rotateX(-Math.PI / 2), steel);
+  box(mount, steel, 2.15, .085, .35, 0, -.10, 0);
+  for (const x of [-.93, .93]) {
+    cylinder(mount, steel, .105, .28, x, 0, 0, 20).rotation.x = Math.PI / 2;
+    mesh(mount, new THREE.TubeGeometry(new THREE.CatmullRomCurve3(
+      Array.from({ length: 64 }, (_, i) => new THREE.Vector3(
+        x + Math.cos(i / 63 * Math.PI * 10) * .094, -.06 + i / 63 * .21,
+        Math.sin(i / 63 * Math.PI * 10) * .094))), 64, .014, 6), steel);
+  }
+  for (const x of [-1.16, 1.16]) {
+    for (const y of [-1.16, 1.16]) box(fan.frame, rubber, .21, .21, .045, x, y, .225);
+    pipe(fan.support, [[x, .81, .18], [x * 1.1, .71, -.22], [x * 1.09, -.66, -.23], [x, -.80, .18]], .025, steel);
+  }
+  for (let i = 0; i < 4; i++) {
+    const z = i * .022;
+    pipe(fan.frame, [[1.13, -.88, z], [1.39, -.97, z], [1.43, -1.27, z], [1.2, -1.38, z]], .012, rubber);
+  }
+  box(fan.frame, graphite, .19, .09, .13, 1.16, -1.38, .033);
+  fan.support.position.z = -.19;
+  fan.hub.position.z = -.13;
+  fan.rotor.position.z = .005;
+  fan.frame.position.z = .06;
+  fan.fasteners.position.z = .29;
+  model.add(tower, mount, fan.model);
+  const explode = (amount) => {
+    const pull = THREE.MathUtils.smoothstep(amount, 0, .47);
+    const stack = THREE.MathUtils.smoothstep(amount, .42, 1);
+    mount.position.set(0, -1.62 - amount * 2.14, -.41 * (1 - stack));
+    tower.position.set(0, -.6 * stack, .41 * stack);
+    fan.model.position.set(0, .03 + stack * 3.03, .45 + pull * 1.33 - stack * 1.78);
+    fan.model.rotation.x = -stack * .43;
+  };
+  explode(0);
+  mount.name = 'Cooler mounting assembly';
+  return { model, frame: fan.frame, rotor: fan.rotor, support: mount, tower, explode };
+}
+
+function pcbFinish() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 832;
+  const ink = canvas.getContext('2d');
+  ink.fillStyle = '#373838';
+  ink.fillRect(0, 0, canvas.width, canvas.height);
+  ink.scale(canvas.width / 3.8, canvas.height / 3.08);
+  ink.translate(1.9, 1.54);
+  for (let i = 0; i < 176; i++) {
+    const x = (i * 103 % 179) / 179 * 3.6 - 1.8;
+    const y = (i * 61 % 179) / 179 * 2.9 - 1.45;
+    const dir = i % 2 ? 1 : -1;
+    const run = .09 + i % 7 * .038;
+    ink.strokeStyle = i % 4 ? '#484741' : '#575248';
+    ink.lineWidth = .0048;
+    ink.beginPath();
+    ink.moveTo(x, y);
+    ink.lineTo(x + dir * run, y);
+    ink.lineTo(x + dir * (run + .074), y + dir * .074);
+    ink.lineTo(x + dir * (run + .074), y + dir * .125);
+    ink.stroke();
+    ink.strokeRect(x - .008, y - .008, .016, .016);
+  }
+  const map = new THREE.CanvasTexture(canvas);
+  map.colorSpace = THREE.SRGBColorSpace;
+  map.anisotropy = 4;
+  return map;
+}
+
 export function createMotherboard() {
   const board = new THREE.Group();
-  const pcb = polymer(0x203832);
-  const socket = metal(0xa5bfcb);
-  const slots = polymer(0x344956);
-  const dark = polymer(0x0c1826);
-  const sink = metal(0x557c99);
+  const pcb = polymer(0xffffff);
+  pcb.map = pcbFinish();
+  pcb.bumpMap = pcb.map;
+  pcb.bumpScale = .006;
+  pcb.roughness = .79;
+  const socket = metal(0xabadad);
+  const slots = polymer(0x36383c);
+  const dark = polymer(0x0d0e10);
+  const sink = metal(0x575a5c);
   const base = blockOutline(3.8, 3.08, .075);
   const corners = [[-1.71, -1.37], [1.71, -1.37], [-1.71, 1.37], [1.71, 1.37]];
   for (const [x, y] of corners) circularHole(base, x, y, .047);
-  mesh(board, machined(base, .09), pcb, 0, 0, -.12);
+  const surface = machined(base, .09);
+  const uv = surface.attributes.uv;
+  const points = surface.attributes.position;
+  for (let i = 0; i < uv.count; i++) {
+    uv.setXY(i, points.getX(i) / 3.8 + .5, points.getY(i) / 3.08 + .5);
+  }
+  mesh(board, surface, pcb, 0, 0, -.12);
   repeated(board, new THREE.TorusGeometry(.063, .013, 6, 16), solder,
     corners.map(([x, y]) => [x, y, .007]));
 
@@ -242,6 +344,17 @@ export function createMotherboard() {
   repeated(board, new THREE.BoxGeometry(.15, .14, .058), graphite,
     Array.from({ length: 12 }, (_, index) => [.94 + (index % 4) * .21, -.23 + Math.floor(index / 4) * .32, .054]));
 
+  box(board, graphite, .74, .48, .1, 1.31, -.87, .065);
+  const micro = Array.from({ length: 480 }, (_, i) => {
+    const x = ((i * 113) % 479) / 479 * 3.4 - 1.68;
+    const y = ((i * 283) % 479) / 479 * 2.76 - 1.38;
+    return [x, y, .012];
+  }).filter(([x, y]) => !(y > -.1 && x > -.94 && x < 1.06));
+  repeated(board, new THREE.BoxGeometry(.052, .026, .023), steel, micro);
+  repeated(board, new THREE.BoxGeometry(.031, .027, .024), graphite,
+    micro.map(([x, y, z]) => [x, y, z + .012]));
+  repeated(board, new THREE.TorusGeometry(.012, .004, 4, 8), solder,
+    micro.map(([x, y]) => [x + .038, y + .032, .004]));
   const traces = [];
   for (let index = 0; index < 21; index++) {
     const y = -.92 + index * .045;
@@ -256,6 +369,6 @@ export function createMotherboard() {
   }
   const circuit = new THREE.BufferGeometry();
   circuit.setAttribute('position', new THREE.Float32BufferAttribute(traces, 3));
-  board.add(new THREE.LineSegments(circuit, new THREE.LineBasicMaterial({ color: 0x406980 })));
+  board.add(new THREE.LineSegments(circuit, new THREE.LineBasicMaterial({ color: 0x4b4640 })));
   return board;
 }
