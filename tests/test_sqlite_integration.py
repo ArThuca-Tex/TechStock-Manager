@@ -53,6 +53,22 @@ class SQLiteIntegrationTest(unittest.TestCase):
             'quantidade':quantities or ['2','1'], 'cliente_nome':'Teste de integração',
             'cliente_documento':'000.000.000-00', 'forma_pagamento':'PIX'})
 
+    def test_registration_checks_cpf_without_storing_it(self):
+        client = app.test_client()
+        client.get('/criar-conta')
+        with client.session_transaction() as session:
+            token = session['csrf']
+        form = dict(csrf_token=token, nome='Teste', email='cadastro@example.test',
+                    senha='SenhaTeste123', confirmar_senha='SenhaTeste123')
+        for cpf in ('', '000.000.000-00', '123.456.789-00'):
+            response = client.post('/criar-conta', data=dict(form, cpf=cpf))
+            self.assertIn('Informe um CPF válido', response.get_data(as_text=True))
+        self.assertFalse(self.query('SELECT id FROM Usuarios WHERE email=?', form['email']))
+        response = client.post('/criar-conta', data=dict(form, cpf='123.456.789-09'))
+        self.assertEqual(response.location, '/login')
+        columns = self.query('PRAGMA table_info(Usuarios)')
+        self.assertNotIn('cpf', [column[1] for column in columns])
+
     def test_login_real_hash_and_pages(self):
         for email, password in (('operador@techstore.com','Operador@123'), ('gerente@techstore.com','Gerente@123')):
             client = app.test_client()

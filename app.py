@@ -1,18 +1,23 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session, g, abort
-from werkzeug.security import check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime, timedelta
 import os
+import re
 import secrets
+from collections import Counter
 from decimal import Decimal, InvalidOperation
 from db import database_engine, demo_mode_enabled, get_connection, initialize_sqlite
 import pyodbc
-from support import MAX_BODY as SUPPORT_MAX_BODY, support
+from support import MAX_BODY as SUPPORT_MAX_BODY, RateLimit, support
 
 app = Flask(__name__)
 app.register_blueprint(support)
 app.secret_key = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
 app.config.update(PERMANENT_SESSION_LIFETIME=timedelta(hours=8), SESSION_COOKIE_HTTPONLY=True,
                   SESSION_COOKIE_SAMESITE="Lax", SESSION_COOKIE_SECURE=os.environ.get("COOKIE_SECURE") == "1")
+
+AUTH_FORM_LIMITS = {'login': 10, 'criar_conta': 5}
+auth_rate_limit = RateLimit()
 
 if demo_mode_enabled() and database_engine() == 'sqlite':
     initialize_sqlite()
@@ -35,12 +40,22 @@ def proteger_rotas():
     g.usuario = None
     if request.endpoint == 'static':
         return
+    if request.method == 'POST' and request.endpoint in AUTH_FORM_LIMITS:
+        request.max_content_length = 16 * 1024
+        key = (request.endpoint, request.remote_addr or 'unknown')
+        if not auth_rate_limit.allow(key, AUTH_FORM_LIMITS[request.endpoint]):
+            return render_template(
+                'mensagem.html', titulo='Muitas tentativas',
+                mensagem='Aguarde um minuto e tente novamente.',
+            ), 429, {'Retry-After': '60'}
     if request.blueprint == 'support' and request.method == 'POST':
         request.max_content_length = SUPPORT_MAX_BODY
         if request.mimetype != 'application/x-www-form-urlencoded':
             abort(415)
     session.setdefault('csrf', secrets.token_hex(32))
-    if request.method == 'POST' and not secrets.compare_digest(session['csrf'], request.form.get('csrf_token', '')):
+    if request.method == 'POST' and not secrets.compare_digest(
+        session['csrf'].encode('utf-8'), request.form.get('csrf_token', '').encode('utf-8')
+    ):
         abort(400, description='Formulário expirado. Recarregue a página e tente novamente.')
     if session.get('usuario_id'):
         conn = get_connection()
@@ -51,7 +66,7 @@ def proteger_rotas():
             g.usuario = users[0] if users else None
         finally:
             conn.close()
-    if request.blueprint == 'support' or request.endpoint in {'login', 'dashboard'}:
+    if request.blueprint == 'support' or request.endpoint in {'login', 'criar_conta', 'dashboard'}:
         return
     if not g.usuario:
         return redirect(url_for('login'))
@@ -60,11 +75,24 @@ def proteger_rotas():
         abort(403)
 
 
+@app.after_request
+def adicionar_cabecalhos_de_seguranca(response):
+    response.headers.setdefault('X-Content-Type-Options', 'nosniff')
+    response.headers.setdefault('Content-Security-Policy', "frame-ancestors 'none'")
+    response.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
+    if request.endpoint in AUTH_FORM_LIMITS:
+        response.headers['Cache-Control'] = 'no-store'
+    return response
+
+
 @app.context_processor
 def contexto_usuario():
     return {'usuario': g.get('usuario'), 'csrf_token': session.get('csrf', ''),
-            'demo_mode': demo_mode_enabled(),
-            'asset_version': int(os.path.getmtime(os.path.join(app.static_folder, 'css', 'style.css')))}
+            'asset_version': max(os.stat(os.path.join(app.static_folder, asset)).st_mtime_ns for asset in (
+                'css/style.css', 'css/workspace.css', 'js/workspace-theme.js',
+                'css/control-center.css', 'js/control-center.js',
+                'css/landing-extras.css', 'js/landing-loading.js', 'js/intro.js',
+            ))}
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -86,10 +114,59 @@ def login():
     return render_template('login.html')
 
 
+@app.route('/criar-conta', methods=['GET', 'POST'])
+def criar_conta():
+    if request.method == 'POST':
+        nome = request.form.get('nome', '').strip()
+        email = request.form.get('email', '').strip().lower()
+        senha = request.form.get('senha', '')
+        if not 1 <= len(nome) <= 160:
+            flash('Informe um nome com até 160 caracteres.', 'danger')
+        elif len(email) > 254 or not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+', email):
+            flash('Informe um e-mail válido.', 'danger')
+        elif not 8 <= len(senha) <= 128:
+            flash('Use uma senha de 8 a 128 caracteres.', 'danger')
+        elif senha != request.form.get('confirmar_senha'):
+            flash('As senhas precisam ser iguais.', 'danger')
+        elif not cpf_valido(request.form.get('cpf', '').strip()):
+            flash('Informe um CPF válido para criar a conta.', 'danger')
+        else:
+            senha_hash = generate_password_hash(senha)
+            conn = get_connection()
+            try:
+                conn.cursor().execute(
+                    "INSERT INTO Usuarios (nome_completo, email, senha_hash, perfil_acesso) VALUES (?, ?, ?, 'OPERADOR')",
+                    nome, email, senha_hash,
+                )
+                conn.commit()
+            except pyodbc.IntegrityError:
+                conn.rollback()
+                flash('Não foi possível criar a conta. Verifique se o e-mail já está cadastrado.', 'danger')
+            else:
+                flash('Conta criada. Entre com seu e-mail e senha.', 'success')
+                return redirect(url_for('login'))
+            finally:
+                conn.close()
+    return render_template('criar_conta.html')
+
+
 @app.post('/logout')
 def logout():
     session.clear()
     return redirect(url_for('login'))
+
+
+def cpf_valido(documento):
+    if not re.fullmatch(r'[0-9]{11}|[0-9]{3}\.[0-9]{3}\.[0-9]{3}-[0-9]{2}', documento):
+        return False
+    digits = [int(digit) for digit in documento if digit.isdigit()]
+    if len(set(digits)) == 1:
+        return False
+    for size in (9, 10):
+        total = sum(digit * weight for digit, weight in zip(digits[:size], range(size + 1, 1, -1)))
+        if digits[size] != (total * 10 % 11) % 10:
+            return False
+    return True
 
 
 def rows_to_dicts(cursor):
@@ -123,8 +200,13 @@ def dashboard():
         low_stock = cur.fetchone()[0]
         cur.execute("SELECT COALESCE(SUM(estoque_atual), 0) FROM Produtos WHERE ativo = 1")
         total_units = cur.fetchone()[0]
+        stock_by_category = Counter()
+        for product in products:
+            stock_by_category[product['categoria']] += product['estoque_atual']
+        category_stock = stock_by_category.most_common(5)
         return render_template("dashboard.html", products=products, total=total,
-                               low_stock=low_stock, total_units=total_units)
+                               low_stock=low_stock, total_units=total_units,
+                               category_stock=category_stock)
     finally:
         conn.close()
 

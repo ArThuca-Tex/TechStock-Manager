@@ -84,7 +84,59 @@
 @media screen and (max-width: 385px) {
   .control-grid .control-stock-health { flex-wrap: wrap; }
 }
+.control-actions { display: flex; flex-wrap: wrap; gap: .65rem; }
+.dashboard-plans {
+  margin-block: 3rem 1rem;
+  padding: clamp(1rem, 3vw, 2rem);
+  scroll-margin-top: 6rem;
+  border: 1px solid #30435c;
+  border-radius: 1.75rem;
+  color: #ecf5ff;
+  background:
+    radial-gradient(ellipse at 10% 4%, #214d77, transparent 60%),
+    radial-gradient(ellipse at 92% 85%, #23445f, transparent 55%),
+    #111b2c;
+}
+.dashboard-plans h2 { margin: 0 0 1.4rem; color: inherit; }
+.plan-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: 1rem;
+}
+.plan-card {
+  min-width: 0;
+  padding: clamp(1rem, 2.5vw, 1.65rem);
+  border: 1px solid #adcfee45;
+  border-radius: 1.4rem;
+  background: linear-gradient(145deg, #cde8ff26, #102035a6);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 14px 26px #07132340, inset 0 1px #e7f4ff20;
+}
+.plan-card-featured { border-color: #78cbff; background: linear-gradient(145deg, #68b9f739, #142842b8); }
+.plan-card h3 { margin: 0 0 1.1rem; color: #e9f5ff; font-size: 1rem; }
+.plan-card p { margin: 0 0 .4rem; color: #d8e8fa; }
+.plan-price strong { color: #fff; font-size: clamp(1.65rem, 2.5vw, 2.3rem); }
+.plan-annual strong { color: #fff; }
+.plan-card .plan-saving { color: #9de8d4; font-size: .88rem; }
+.plan-card .plan-description { margin-block: 1.15rem; }
+.plan-card ul { display: grid; gap: .65rem; padding: 1rem 0 0; margin: 0; border-top: 1px solid #adcfee45; list-style: none; }
+.plan-card li { display: flex; gap: .55rem; font-size: .9rem; }
+.plan-card li::before { content: '✓'; color: #9de8d4; }
 @media screen and (prefers-reduced-motion: no-preference) {
+  .stock-pattern { animation: stock-pattern-in .85s ease-out both; }
+  @keyframes stock-pattern-in {
+    from { opacity: .25; transform: translateX(12px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .plan-card { transition: border-color .2s ease, box-shadow .2s ease; }
+  .plan-card:hover { border-color: #9bdaff; box-shadow: 0 16px 30px #07132378; }
+  .plan-card.plan-visible { animation: plan-in .5s ease-out both; }
+  .plan-card.plan-visible:nth-child(2) { animation-delay: .08s; }
+  .plan-card.plan-visible:nth-child(3) { animation-delay: .16s; }
+  @keyframes plan-in {
+    from { opacity: .5; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
   .control-grid article { animation: control-in .48s both ease-out; }
   .control-grid article:nth-child(2) { animation-delay: .07s; }
   .control-grid article:nth-child(3) { animation-delay: .13s; }

@@ -8,17 +8,25 @@
   <link rel="icon" href="{{ url_for('static', filename='image/logos/Logótipo de Medusa Branca em Vetor.png') }}" type="image/png">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/intro.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/ocean.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/control-center.css', v=asset_version) }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/landing-extras.css', v=asset_version) }}">
   <script src="{{ url_for('static', filename='vendor/gsap.min.js') }}" defer></script>
   <script src="{{ url_for('static', filename='vendor/ScrollTrigger.min.js') }}" defer></script>
-  <script src="{{ url_for('static', filename='js/intro.js') }}" type="module"></script>
+  <script src="{{ url_for('static', filename='js/intro.js', v=asset_version) }}" type="module"></script>
+  <script src="{{ url_for('static', filename='js/landing-loading.js', v=asset_version) }}" defer></script>
+  <script src="{{ url_for('static', filename='js/control-center.js', v=asset_version) }}" defer></script>
 </head>
 <body>
+<div class="landing-loader" role="status" hidden>
+  <span class="landing-loader-spinner" aria-hidden="true"></span>
+  <span>Carregando apresentação…</span>
+</div>
 <main class="cinema">
   <header class="cinema-header">
     <a class="cinema-brand" href="{{ url_for('dashboard') }}" aria-label="TechStock Manager, início">
       <img class="cinema-brand-image" src="{{ url_for('static', filename='image/logos/Logótipo TechStock Manager em Branco.png') }}" alt="TechStock Manager">
     </a>
-    <a class="cinema-link" href="{{ url_for('login') }}">{% if demo_mode %}Demonstração · {% endif %}Acesso direto <span aria-hidden="true">↗</span></a>
+    <a class="cinema-link" href="{{ url_for('login') }}">Acesso direto <span aria-hidden="true">↗</span></a>
   </header>
   <div class="cinema-stage">
     <div class="cinema-art" aria-hidden="true">
@@ -89,6 +97,7 @@
       </div>
     </section>
   </div>
+  {% include 'dashboard_plans.html' %}
 </main>
 </body>
 </html>

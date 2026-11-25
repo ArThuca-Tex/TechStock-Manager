@@ -40,7 +40,7 @@ ou novo deploy. O catálogo inicial é recriado se o arquivo do banco sumir.
 | Operador | operador@techstore.com | Operador@123 |
 | Gerente | gerente@techstore.com | Gerente@123 |
 
-As senhas são armazenadas como hashes seguros do Werkzeug, nunca em texto no banco. As credenciais acima são exclusivas da demonstração e devem ser trocadas antes de disponibilizar o sistema. Não há cadastro público. Usuários INATIVOS não conseguem operar; o status e o perfil são conferidos no banco a cada requisição.
+As senhas são armazenadas como hashes seguros do Werkzeug, nunca em texto no banco. As credenciais acima são exclusivas da demonstração e devem ser trocadas antes de disponibilizar o sistema. O link **Criar conta** na tela de login permite o cadastro público de operadores. Usuários INATIVOS não conseguem operar; o status e o perfil são conferidos no banco a cada requisição.
 
 ## Requisitos da atividade
 

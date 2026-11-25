@@ -1,0 +1,55 @@
+<section class="inventory-charts" aria-label="Gráficos de estoque">
+  <article class="inventory-chart">
+    <h2>Unidades por categoria</h2>
+    <p>Até 5 categorias com maior saldo</p>
+    {% if category_stock %}
+      {% set maximum = category_stock[0][1] or 1 %}
+      <ul class="chart-rows" role="list">
+      {% for name, units in category_stock %}
+        <li>
+          <span>{{ name }}</span><strong>{{ units }}</strong>
+          <span class="chart-track" aria-hidden="true"><span class="chart-fill" style="--bar-width: {{ units / maximum * 100 }}%"></span></span>
+        </li>
+      {% endfor %}
+      </ul>
+    {% else %}
+      <p>Nenhum produto ativo no catálogo.</p>
+    {% endif %}
+  </article>
+  <article class="inventory-chart">
+    <h2>Situação do catálogo</h2>
+    <p>Distribuição dos produtos ativos</p>
+    {% if total %}
+      <div class="chart-track chart-stacked" aria-hidden="true">
+        <span class="chart-fill" style="--bar-width: {{ (total - low_stock) / total * 100 }}%"></span>
+        <span class="chart-fill chart-warning" style="--bar-width: {{ low_stock / total * 100 }}%"></span>
+      </div>
+      <ul class="chart-legend" role="list">
+        <li><span class="chart-dot" aria-hidden="true"></span> Estoque regular <strong>{{ total - low_stock }}</strong></li>
+        <li><span class="chart-dot chart-warning" aria-hidden="true"></span> Reposição necessária <strong>{{ low_stock }}</strong></li>
+      </ul>
+    {% else %}
+      <p>Nenhum produto ativo no catálogo.</p>
+    {% endif %}
+  </article>
+  <article class="inventory-chart sample-chart">
+    <h2>Evolução mensal de vendas</h2>
+    <p>Dados fictícios · janeiro a junho</p>
+    <svg class="sample-line" viewBox="0 0 360 112" role="img" aria-label="Janeiro 18, fevereiro 32, março 25, abril 43, maio 38, junho 54 vendas">
+      <path class="sample-grid" d="M0 24H360M0 60H360M0 96H360" />
+      <path class="sample-trend" pathLength="1" d="M6 88L75 65L145 77L215 46L285 54L354 26" />
+    </svg>
+    <div class="sample-months" aria-hidden="true"><span>Jan</span><span>Fev</span><span>Mar</span><span>Abr</span><span>Mai</span><span>Jun</span></div>
+  </article>
+  <article class="inventory-chart sample-chart">
+    <h2>Vendas por forma de pagamento</h2>
+    <p>Dados fictícios · 80 vendas</p>
+    <ul class="chart-rows" role="list">
+      {% for method, sales in [('PIX', 38), ('Cartão de crédito', 29), ('Boleto', 13)] %}
+        <li><span>{{ method }}</span><strong>{{ sales }}</strong>
+          <span class="chart-track" aria-hidden="true"><span class="chart-fill" style="--bar-width: {{ sales / 38 * 100 }}%"></span></span>
+        </li>
+      {% endfor %}
+    </ul>
+  </article>
+</section>

@@ -3,6 +3,7 @@ import { trackCrystals } from './landing-pointer.js';
 
 const cinema = document.querySelector('.cinema');
 const { gsap, ScrollTrigger } = window;
+let scenePreparation;
 
 if (cinema && gsap && ScrollTrigger) {
   gsap.registerPlugin(ScrollTrigger);
@@ -12,6 +13,14 @@ if (cinema && gsap && ScrollTrigger) {
     if (!event.persisted) motion.revert();
   });
 }
+
+function markSceneReady() {
+  if (!cinema) return;
+  cinema.setAttribute('data-scene-ready', '');
+  cinema.dispatchEvent(new Event('scene-ready'));
+}
+
+Promise.resolve(scenePreparation).finally(markSceneReady);
 
 function setupLanding() {
   const select = gsap.utils.selector(cinema);
@@ -145,7 +154,7 @@ function setupLanding() {
   drawSoon();
 
   if ('WebGL2RenderingContext' in window && !navigator.connection?.saveData) {
-    import('./landing-scene.js').then(({ mountScene }) => {
+    scenePreparation = import('./landing-scene.js').then(({ mountScene }) => {
       if (disposed) return;
       model = mountScene(host, state, () => {
         cinema.classList.remove('has-webgl');

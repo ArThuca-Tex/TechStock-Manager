@@ -1,0 +1,29 @@
+.cinema > .dashboard-plans {
+  width: min(1240px, calc(100% - 2rem));
+  margin: clamp(2rem, 6vw, 5rem) auto;
+}
+.landing-loader[hidden] { display: none; }
+.landing-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 1rem;
+  background: #080d1b;
+  color: #e8f2ff;
+  font: 600 .95rem system-ui, sans-serif;
+  pointer-events: none;
+}
+.landing-loader-spinner {
+  width: 2rem;
+  aspect-ratio: 1;
+  border: 3px solid #243651;
+  border-top-color: #8cc8ff;
+  border-radius: 50%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .landing-loader-spinner { animation: landing-spin .8s linear infinite; }
+  @keyframes landing-spin { to { transform: rotate(1turn); } }
+}

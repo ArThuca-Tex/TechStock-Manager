@@ -7,6 +7,10 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_version) }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/techstock.css') }}">
   {% block page_assets %}{% endblock %}
+  {% if usuario %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/workspace.css', v=asset_version) }}">
+    <script src="{{ url_for('static', filename='js/workspace-theme.js', v=asset_version) }}"></script>
+  {% endif %}
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='image/logos/Logótipo de Medusa Branca em Vetor.png') }}">
   <script src="{{ url_for('static', filename='js/interface.js') }}" defer></script>
 </head>
@@ -25,7 +29,7 @@
     {% if usuario %}
       <div class="navigation-caption">Central de operações</div>
       <nav aria-label="Navegação principal">
-        {{ nav_item('dashboard', '⊞', 'Catálogo') }}
+        {{ nav_item('dashboard', '⊞', 'Dashboard') }}
         {{ nav_item('pdv', '▤', 'Frente de caixa') }}
         {{ nav_item('vendas', '◫', 'Vendas') }}
         {% if usuario.perfil_acesso == 'GERENTE' %}
@@ -42,15 +46,17 @@
     <header class="topbar">
       <div><span class="eyebrow">TECHSTORE INFORMÁTICA</span><strong>Painel de operações</strong></div>
       {% if usuario %}
-        <span class="user-chip">{{ usuario.nome_completo }} · {{ usuario.perfil_acesso }}</span>
-        <form method="post" action="{{ url_for('logout') }}">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-          <button class="text-button">Sair</button>
-        </form>
+        <div class="workspace-toolbar">
+          <button class="button secondary theme-toggle" type="button" hidden data-theme-toggle>Modo claro</button>
+          <span class="user-chip">{{ usuario.nome_completo }} · {{ usuario.perfil_acesso }}</span>
+          <form method="post" action="{{ url_for('logout') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button class="text-button" type="submit">Sair</button>
+          </form>
+        </div>
       {% endif %}
     </header>
     <section class="content">
-      {% if demo_mode %}<p class="alert"><strong>Ambiente de demonstração</strong></p>{% endif %}
       {% for category, message in get_flashed_messages(with_categories=true) %}
         <div class="alert {{ category }}" role="alert">{{ message }}</div>
       {% endfor %}

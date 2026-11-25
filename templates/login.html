@@ -16,15 +16,17 @@
     <span class="eyebrow">ACESSO À OPERAÇÃO</span>
     <h2 id="login-title">Bem-vindo de volta</h2>
     <p>Entre com sua conta para acessar o TechStock.</p>
-    <form method="post">
+    <form method="post" action="{{ url_for('login') }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <label for="email">E-mail corporativo</label>
       <input id="email" type="email" name="email" required autocomplete="username" maxlength="254" placeholder="voce@techstore.com" value="{{ request.form.get('email', '') }}">
       <label for="senha">Senha</label>
       <div class="password-field"><input id="senha" type="password" name="senha" required autocomplete="current-password" placeholder="Digite sua senha"><button type="button" id="mostrar-senha" aria-controls="senha" aria-pressed="false">Mostrar</button></div>
-      <button class="button primary full-button login-submit">Entrar no painel <span aria-hidden="true">→</span></button>
+      <button class="button primary full-button login-submit" type="submit">Entrar no painel <span aria-hidden="true">→</span></button>
     </form>
-    <p class="login-help">Precisa de acesso? Procure o gerente responsável.<br><a href="{{ url_for('support.page') }}">Precisa de ajuda?</a></p>
+    <a class="button secondary full-button" href="{{ url_for('criar_conta') }}">Criar conta</a>
+    <a class="button secondary full-button" href="{{ url_for('dashboard') }}"><span aria-hidden="true">←</span> Voltar ao início</a>
+    <p class="login-help"><a href="{{ url_for('support.page') }}">Precisa de ajuda?</a></p>
   </section>
 </div>
 <script>
