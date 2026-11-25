@@ -18,7 +18,7 @@
     <a class="cinema-brand" href="{{ url_for('dashboard') }}" aria-label="TechStock Manager, início">
       <img class="cinema-brand-image" src="{{ url_for('static', filename='image/logos/Logótipo TechStock Manager em Branco.png') }}" alt="TechStock Manager">
     </a>
-    <a class="cinema-link" href="{{ url_for('login') }}">Acesso direto <span aria-hidden="true">↗</span></a>
+    <a class="cinema-link" href="{{ url_for('login') }}">{% if demo_mode %}Demonstração · {% endif %}Acesso direto <span aria-hidden="true">↗</span></a>
   </header>
   <div class="cinema-stage">
     <div class="cinema-art" aria-hidden="true">

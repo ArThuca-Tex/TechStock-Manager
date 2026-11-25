@@ -19,6 +19,20 @@ O arquivo `techstock.db` fica na pasta do projeto. As tabelas ausentes e os dois
 
 Alternativa de inicialização: `powershell -ExecutionPolicy Bypass -File .\iniciar.ps1`. Para outra porta: acrescente `-Porta 5001` e abra http://127.0.0.1:5001.
 
+## Modo demonstração no Render
+
+Na aba **Environment** do serviço, defina `DB_ENGINE=sqlite` e
+`DEMO_MODE=true`. Mantenha `SQLITE_PATH` ausente para usar o caminho
+padrão, ou aponte para um arquivo em um diretório gravável.
+Defina um `SECRET_KEY` aleatório e estável para as sessões,
+`COOKIE_SECURE=1` para acesso via HTTPS e `FLASK_DEBUG=0`.
+
+Ao iniciar, o aplicativo carrega o catálogo fictício quando as três tabelas
+de produtos, categorias e fornecedores estão vazias. A interface identifica
+o ambiente como demonstração. Em um serviço com armazenamento efêmero,
+os cadastros feitos durante a apresentação podem se perder após um reinício
+ou novo deploy. O catálogo inicial é recriado se o arquivo do banco sumir.
+
 ## Usuários de demonstração
 
 | Perfil | E-mail | Senha inicial |

@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import os
 import secrets
 from decimal import Decimal, InvalidOperation
-from db import get_connection
+from db import database_engine, demo_mode_enabled, get_connection, initialize_sqlite
 import pyodbc
 from support import MAX_BODY as SUPPORT_MAX_BODY, support
 
@@ -13,6 +13,9 @@ app.register_blueprint(support)
 app.secret_key = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
 app.config.update(PERMANENT_SESSION_LIFETIME=timedelta(hours=8), SESSION_COOKIE_HTTPONLY=True,
                   SESSION_COOKIE_SAMESITE="Lax", SESSION_COOKIE_SECURE=os.environ.get("COOKIE_SECURE") == "1")
+
+if demo_mode_enabled() and database_engine() == 'sqlite':
+    initialize_sqlite()
 
 
 @app.template_filter('data_hora')
@@ -60,6 +63,7 @@ def proteger_rotas():
 @app.context_processor
 def contexto_usuario():
     return {'usuario': g.get('usuario'), 'csrf_token': session.get('csrf', ''),
+            'demo_mode': demo_mode_enabled(),
             'asset_version': int(os.path.getmtime(os.path.join(app.static_folder, 'css', 'style.css')))}
 
 

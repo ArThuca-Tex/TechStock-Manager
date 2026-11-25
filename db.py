@@ -7,6 +7,7 @@ from pathlib import Path
 import threading
 import pyodbc
 from werkzeug.security import generate_password_hash
+from demo_catalog import seed_demo_catalog
 
 ROOT = Path(__file__).resolve().parent
 _initialized = set()
@@ -22,6 +23,10 @@ def database_engine():
 
 def sqlite_path():
     return Path(os.environ.get('SQLITE_PATH', str(ROOT / 'techstock.db'))).resolve()
+
+
+def demo_mode_enabled():
+    return os.environ.get('DEMO_MODE', '').strip().lower() == 'true'
 
 
 def initialize_sqlite():
@@ -45,6 +50,8 @@ def initialize_sqlite():
                 if not conn.execute('SELECT 1 FROM Usuarios WHERE email=?', (email,)).fetchone():
                     conn.execute('INSERT INTO Usuarios(nome_completo,email,senha_hash,perfil_acesso) VALUES(?,?,?,?)',
                                  (name, email, generate_password_hash(password), role))
+            if demo_mode_enabled():
+                seed_demo_catalog(conn)
             conn.commit()
             _initialized.add(path)
         except Exception:
