@@ -233,6 +233,8 @@ export function mountScene(host, state, onContextLost) {
     anchor,
     setPointer(x, y) { pointer.set(x, y); },
     dispose() {
+      lost = true;
+      ocean.stopLoading();
       observer.disconnect();
       canvas.removeEventListener('webglcontextlost', handleContextLost);
       const geometries = new Set();

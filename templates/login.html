@@ -24,7 +24,7 @@
       <div class="password-field"><input id="senha" type="password" name="senha" required autocomplete="current-password" placeholder="Digite sua senha"><button type="button" id="mostrar-senha" aria-controls="senha" aria-pressed="false">Mostrar</button></div>
       <button class="button primary full-button login-submit">Entrar no painel <span aria-hidden="true">→</span></button>
     </form>
-    <p class="login-help">Precisa de acesso? Procure o gerente responsável.</p>
+    <p class="login-help">Precisa de acesso? Procure o gerente responsável.<br><a href="{{ url_for('support.page') }}">Precisa de ajuda?</a></p>
   </section>
 </div>
 <script>

@@ -10,7 +10,7 @@
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='image/logos/Logótipo de Medusa Branca em Vetor.png') }}">
   <script src="{{ url_for('static', filename='js/interface.js') }}" defer></script>
 </head>
-<body class="{% if request.endpoint == 'login' %}auth-page{% endif %}">
+<body class="{% block body_classes %}{% if request.endpoint == 'login' %}auth-page{% endif %}{% endblock %}">
 
 {% macro nav_item(endpoint, icon, label) -%}
   {% set active = request.endpoint == endpoint %}
@@ -33,6 +33,8 @@
           {{ nav_item('movimentacoes', '⇄', 'Movimentações') }}
           {{ nav_item('cadastros', '◇', 'Cadastros') }}
         {% endif %}
+        {% set headset %}<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M3 14v-2a9 9 0 0 1 18 0v3a5 5 0 0 1-5 5h-3"/><rect x="3" y="12" width="4" height="6" rx="2"/><rect x="17" y="12" width="4" height="6" rx="2"/></svg>{% endset %}
+        {{ nav_item('support.page', headset, 'Suporte') }}
       </nav>
     {% endif %}
   </aside>

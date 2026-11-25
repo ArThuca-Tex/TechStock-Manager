@@ -28,12 +28,29 @@ export function createOcean(quality) {
   });
   group.add(particles.group, school.group, jelly.body, debris);
 
+  let disposed = false;
+  let model;
+  import('./jelly-fbx.js').then(({ loadJellyfish }) => {
+    if (!disposed) return loadJellyfish(quality);
+  }).then((loaded) => {
+    if (!loaded) return;
+    if (disposed) {
+      loaded.dispose();
+      return;
+    }
+    model = loaded;
+    jelly.useModel(model.main);
+    school.useModel(model.swarm);
+  }).catch((error) => console.warn('Não foi possível carregar jellyfish.fbx:', error));
+
   return {
     group,
+    stopLoading() { disposed = true; },
     update(time, state, pointer, compact) {
       const { water, rise, spread } = state;
       group.visible = water > .005;
       if (!group.visible) return;
+      model?.update(time, pointer, rise);
       particles.update(time, water, rise, spread);
       school.update(time, rise, spread, water, pointer, compact);
       jelly.body.visible = false;

@@ -6,8 +6,10 @@ import secrets
 from decimal import Decimal, InvalidOperation
 from db import get_connection
 import pyodbc
+from support import MAX_BODY as SUPPORT_MAX_BODY, support
 
 app = Flask(__name__)
+app.register_blueprint(support)
 app.secret_key = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
 app.config.update(PERMANENT_SESSION_LIFETIME=timedelta(hours=8), SESSION_COOKIE_HTTPONLY=True,
                   SESSION_COOKIE_SAMESITE="Lax", SESSION_COOKIE_SECURE=os.environ.get("COOKIE_SECURE") == "1")
@@ -30,6 +32,10 @@ def proteger_rotas():
     g.usuario = None
     if request.endpoint == 'static':
         return
+    if request.blueprint == 'support' and request.method == 'POST':
+        request.max_content_length = SUPPORT_MAX_BODY
+        if request.mimetype != 'application/x-www-form-urlencoded':
+            abort(415)
     session.setdefault('csrf', secrets.token_hex(32))
     if request.method == 'POST' and not secrets.compare_digest(session['csrf'], request.form.get('csrf_token', '')):
         abort(400, description='Formulário expirado. Recarregue a página e tente novamente.')
@@ -42,7 +48,7 @@ def proteger_rotas():
             g.usuario = users[0] if users else None
         finally:
             conn.close()
-    if request.endpoint in {'login', 'dashboard'}:
+    if request.blueprint == 'support' or request.endpoint in {'login', 'dashboard'}:
         return
     if not g.usuario:
         return redirect(url_for('login'))

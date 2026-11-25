@@ -32,8 +32,14 @@ export function createSwarm(count) {
     return { angle, ring, scale: .085 + (index % 9) * .014, depth: -1.7 - (index % 11) * .53 };
   });
 
+  let imported;
   return {
     group,
+    useModel(meshes) {
+      bells.visible = trails.visible = false;
+      imported = meshes;
+      group.add(...meshes);
+    },
     update(time, rise, spread, water, pointer, compact) {
       group.visible = water > .82 && rise > .045;
       if (!group.visible) return;
@@ -50,8 +56,13 @@ export function createSwarm(count) {
           THREE.MathUtils.lerp(gatherY, driftY, spread) + Math.cos(time * .68 + angle) * .21,
           depth + Math.sin(angle) * spread * 1.4);
         marker.rotation.set(.14 * Math.sin(angle), .2 * Math.sin(time + index), Math.sin(angle + time * .31) * .24);
-        marker.scale.set(scale * pulse, scale * (2 - pulse), scale * pulse);
+        if (imported) marker.scale.setScalar(scale);
+        else marker.scale.set(scale * pulse, scale * (2 - pulse), scale * pulse);
         marker.updateMatrix();
+        if (imported) {
+          imported.forEach((mesh) => mesh.setMatrixAt(index, marker.matrix));
+          return;
+        }
         bells.setMatrixAt(index, marker.matrix);
         for (let strand = 0; strand < strands; strand++) {
           for (let segment = 0; segment < steps; segment++) {
@@ -67,8 +78,11 @@ export function createSwarm(count) {
           }
         }
       });
-      bells.instanceMatrix.needsUpdate = true;
-      attribute.needsUpdate = true;
+      if (imported) imported.forEach((mesh) => { mesh.instanceMatrix.needsUpdate = true; });
+      else {
+        bells.instanceMatrix.needsUpdate = true;
+        attribute.needsUpdate = true;
+      }
     },
   };
 }

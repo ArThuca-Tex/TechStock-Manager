@@ -97,17 +97,25 @@ export function createJellyfish(quality, geometry) {
   const tentacles = createTentacles(compact);
   body.add(tentacles.mesh);
 
+  let imported;
   return {
     body,
+    useModel(model) {
+      body.children.forEach((child) => { child.visible = false; });
+      imported = model;
+      body.add(model);
+    },
     update(time, rise, pointer, narrow) {
-      const pulse = .5 - .5 * Math.cos(time * 2.1);
-      refractive?.scale.set(.97 - pulse * .15, .98 + pulse * .27, .97 - pulse * .15);
-      uniform.clock.value = time;
-      uniform.pulse.value = pulse;
-      uniform.steer.value = pointer.x;
-      organs.scale.set(1 - pulse * .14, 1 + pulse * .22, 1 - pulse * .14);
-      subumbrella.scale.x = subumbrella.scale.z = .85 - pulse * .13;
-      tentacles.update(time, pulse, pointer.x + Math.sin(rise * 6) * .4);
+      if (!imported) {
+        const pulse = .5 - .5 * Math.cos(time * 2.1);
+        refractive?.scale.set(.97 - pulse * .15, .98 + pulse * .27, .97 - pulse * .15);
+        uniform.clock.value = time;
+        uniform.pulse.value = pulse;
+        uniform.steer.value = pointer.x;
+        organs.scale.set(1 - pulse * .14, 1 + pulse * .22, 1 - pulse * .14);
+        subumbrella.scale.x = subumbrella.scale.z = .85 - pulse * .13;
+        tentacles.update(time, pulse, pointer.x + Math.sin(rise * 6) * .4);
+      }
       body.position.set(Math.sin(rise * 4.5) * .47 + pointer.x * .23,
         -6 + THREE.MathUtils.smoothstep(rise, 0, .23) * 5.26 + rise * 2.2
         + THREE.MathUtils.smoothstep(rise, .90, 1) * 10.5 + Math.sin(time * 2.1) * .075, .46 - rise * .67);

@@ -160,7 +160,6 @@ function setupLanding() {
 
   return () => {
     disposed = true;
-    clearTimeout(timer);
     cancelAnimationFrame(frame);
     visibility.disconnect();
     document.removeEventListener('visibilitychange', drawSoon);

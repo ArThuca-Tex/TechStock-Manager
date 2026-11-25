@@ -1,0 +1,69 @@
+﻿{% extends 'base.html' %}
+{% block title %}Central de suporte | TechStock{% endblock %}
+{% block body_classes %}support-page{% if not usuario %} auth-page support-guest{% endif %}{% endblock %}
+{% block page_assets %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/support.css') }}">
+<script src="{{ url_for('static', filename='js/support.js') }}" defer></script>
+{% endblock %}
+{% block content %}
+<div class="support-shell" data-support data-status="{{ url_for('support.status') }}" data-human="{{ url_for('support.human') }}">
+  <div class="page-heading support-heading">
+    <div>
+      <h1>Central de suporte</h1>
+      <p>Como podemos ajudar você hoje?</p>
+    </div>
+    {% if not usuario %}<a class="support-back" href="{{ url_for('login') }}">← Voltar ao login</a>{% endif %}
+  </div>
+
+  <section class="support-card" aria-label="Conversa com MEDUSA AI">
+    <header class="support-header">
+      <div class="support-identity">
+        <div class="support-logo">
+          <img src="{{ url_for('static', filename='image/logos/Logótipo de Medusa Branca em Vetor.png') }}" alt="" width="34" height="34">
+        </div>
+        <div>
+          <h2>MEDUSA AI</h2>
+          <p class="support-status" data-availability="checking" role="status"><span aria-hidden="true"></span><span id="medusa-availability">Verificando disponibilidade</span></p>
+        </div>
+      </div>
+      <button class="support-button" type="button" id="medusa-reset">Nova conversa</button>
+    </header>
+
+    <div class="support-thread" id="medusa-thread" aria-label="Histórico da conversa" tabindex="0">
+      <div id="medusa-messages">
+        <div class="support-message" data-speaker="assistant">
+          <strong>MEDUSA AI</strong>
+          <p>Olá! Sou a MEDUSA AI. Posso ajudar com acesso, produtos, estoque e outras funções do TechStock.</p>
+        </div>
+      </div>
+      <div id="medusa-suggestions" class="support-suggestions" aria-label="Perguntas frequentes">
+        <button type="button" class="support-button">Não consigo entrar. O que devo conferir?</button>
+        <button type="button" class="support-button">Como cadastrar um produto?</button>
+        <button type="button" class="support-button">Como registrar uma saída de estoque?</button>
+      </div>
+      <div id="medusa-loading" class="support-loading" hidden><i></i><i></i><i></i><span>Preparando resposta</span></div>
+    </div>
+    <div id="medusa-announcement" class="support-visually-hidden" role="status"></div>
+
+    <form class="support-composer" id="medusa-form" action="{{ url_for('support.message') }}" method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <label class="support-visually-hidden" for="medusa-input">Sua mensagem</label>
+      <div class="support-input-row">
+        <textarea id="medusa-input" name="message" rows="2" maxlength="{{ max_message }}" required placeholder="Digite sua dúvida sobre o TechStock…" aria-describedby="medusa-privacy"></textarea>
+        <button class="button primary" id="medusa-send" type="submit">Enviar <span aria-hidden="true">↑</span></button>
+      </div>
+      <p id="medusa-privacy">Evite incluir senhas, credenciais ou dados pessoais.</p>
+      <p id="medusa-error" class="support-error" role="alert" hidden></p>
+    </form>
+
+    <footer class="support-footer">
+      <button class="support-button" id="medusa-human" type="button">Falar com um atendente</button>
+      <div id="medusa-handoff" role="status" hidden>
+        <strong>Aguardando atendente</strong>
+        <p>Solicitação registrada nesta conversa. A conexão com atendentes humanos ainda não está disponível.</p>
+      </div>
+    </footer>
+    <noscript><p class="support-noscript">Ative o JavaScript para usar a conversa.</p></noscript>
+  </section>
+</div>
+{% endblock %}
